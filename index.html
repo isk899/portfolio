@@ -1,0 +1,1040 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Iskander Yusupov — frontend for things that run in a browser</title>
+<meta name="description" content="Frontend developer. Browser RTS, unusual interfaces, tools that ship as one file. Three live projects you can click.">
+
+<!-- ===================================================================
+     SITE ADDRESS — the only four literals that carry it, kept together.
+
+     Telegram, Twitter and Slack fetch the raw HTML and never execute the
+     script, so these four values have to be real absolute strings in the
+     markup. A JS constant alone would leave every crawler with nothing.
+     SITE_URL at the top of the script is the runtime source of truth and
+     rewrites all four on load; these literals are the copy crawlers read.
+
+     One find-and-replace of your-domain.vercel.app covers all of them.
+     =================================================================== -->
+<link rel="canonical"      href="https://your-domain.vercel.app/">
+<meta property="og:url"    content="https://your-domain.vercel.app/">
+<meta property="og:image"  content="https://your-domain.vercel.app/src/img/hero-game.jpg">
+<meta name="twitter:image" content="https://your-domain.vercel.app/src/img/hero-game.jpg">
+
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Iskander Yusupov">
+<meta property="og:locale" content="en_US">
+<meta property="og:locale:alternate" content="ru_RU">
+<meta property="og:title" content="Iskander Yusupov — I build things that run in a browser">
+<meta property="og:description" content="A browser RTS in one HTML file with no dependencies, a typographic landing page, a Telegram downloader bot. All three are live and you can click them.">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1919">
+<meta property="og:image:height" content="1079">
+<meta property="og:image:alt" content="The Ancient Empires: a browser real-time strategy game mid-match.">
+
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Iskander Yusupov — I build things that run in a browser">
+<meta name="twitter:description" content="A browser RTS in one HTML file with no dependencies, a typographic landing page, a Telegram downloader bot. All three are live and you can click them.">
+<meta name="twitter:image:alt" content="The Ancient Empires: a browser real-time strategy game mid-match.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800&family=Azeret+Mono:wght@400&family=Jost:wght@400;500&display=swap">
+
+<style>
+/* ------------------------------------------------------------------ *
+   tokens
+ * ------------------------------------------------------------------ */
+:root{
+  --stone:#B9B3A5;
+  --stone-dark:#8E897C;
+  --ink:#20221F;
+  --player-blue:#2F5FBF;
+  --player-red:#C4453A;
+
+  /* derived: alpha only, no new hues */
+  --veil:rgba(32,34,31,.82);
+  --hover:rgba(32,34,31,.06);
+  --marquee-fill:rgba(47,95,191,.12);
+
+  --chamfer:polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+  --chamfer-in:polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 0 100%);
+
+  /* Jost carries Cyrillic itself (U+0400–045F), so RU prose stays in the
+     display face. Archivo and Azeret Mono do not — nothing Cyrillic is
+     set in Archivo, and the mono fallbacks below all cover Russian. */
+  --display:'Archivo',Arial,sans-serif;
+  --text:'Jost',system-ui,'Segoe UI',Roboto,sans-serif;
+  --mono:'Azeret Mono','Cascadia Mono',Consolas,'DejaVu Sans Mono','Liberation Mono',monospace;
+
+  --d1:clamp(40px,6vw,82px);
+  --d2:clamp(28px,3.5vw,44px);
+  --d3:clamp(24px,3vw,36px);
+
+  --hud-h:34px;
+  --gutter:clamp(16px,4vw,40px);
+}
+
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;border-radius:0}
+
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--stone);
+  color:var(--ink);
+  font-family:var(--text);
+  font-size:17px;
+  line-height:1.65;
+  overflow-x:hidden;
+}
+body.has-hud{padding-bottom:var(--hud-h)}
+
+img,video,iframe{display:block;max-width:100%}
+
+h1,h2,h3{
+  font-family:var(--display);
+  font-weight:800;
+  font-stretch:125%;
+  text-transform:uppercase;
+}
+/* @Tiktokdownload899bot is one 21-character token — let it break rather
+   than push the whole page sideways on a 360px screen */
+h1,h3{overflow-wrap:anywhere}
+
+a{color:var(--ink);text-underline-offset:3px;text-decoration-thickness:1px}
+a:hover{color:var(--player-blue)}
+
+/* focus: outline for plain boxes, inset ring where clip-path would eat it */
+:focus-visible{outline:2px solid var(--player-blue);outline-offset:2px}
+.chamfered:focus-visible,.btn:focus-visible,.tag-btn:focus-visible{
+  outline:none;
+  box-shadow:inset 0 0 0 2px var(--player-blue);
+}
+/* a blue ring on a blue fill is no ring at all */
+.tag-btn[aria-pressed="true"]:focus-visible,
+.lang button[aria-pressed="true"]:focus-visible{
+  outline:none;
+  box-shadow:inset 0 0 0 2px var(--stone);
+}
+
+/* ------------------------------------------------------------------ *
+   panel: 1px ink border that follows the bevel (two clipped layers)
+ * ------------------------------------------------------------------ */
+.panel{background:var(--ink);padding:1px;clip-path:var(--chamfer)}
+.panel > .panel-in{background:var(--stone-dark);clip-path:var(--chamfer-in)}
+
+.panel-head{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  flex-wrap:wrap;
+  padding:9px 14px;
+  border-bottom:1px solid var(--ink);
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+.panel-body{padding:22px var(--gutter) 26px}
+
+/* ------------------------------------------------------------------ *
+   top bar
+ * ------------------------------------------------------------------ */
+.topbar{
+  position:sticky;top:0;z-index:30;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:10px var(--gutter);
+  background:var(--stone);
+  border-bottom:1px solid var(--ink);
+  font-family:var(--mono);
+  font-size:11px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+}
+.topbar .where{flex:1}
+.lang{display:flex;align-items:center;gap:0}
+.lang button{
+  font:inherit;letter-spacing:inherit;text-transform:inherit;
+  background:none;border:0;color:var(--ink);
+  padding:3px 8px;cursor:pointer;
+}
+.lang button[aria-pressed="true"]{background:var(--player-blue);color:var(--stone)}
+.lang .sep{padding:0 2px}
+
+/* ------------------------------------------------------------------ *
+   hero
+ * ------------------------------------------------------------------ */
+.wrap{max-width:1180px;margin:0 auto;padding:0 var(--gutter)}
+.hero{padding-top:var(--gutter)}
+
+.live{display:flex;align-items:center;gap:7px;color:var(--player-red)}
+.live .dot{width:8px;height:8px;background:var(--player-red)}
+
+.hero-view{position:relative;height:68vh;min-height:420px;overflow:hidden;background:var(--ink)}
+.hero-shot{width:100%;height:100%;object-fit:cover}
+.hero-view.has-frame .hero-shot{display:none}
+/* once the real frame is in, the box tracks the logical 1280x800 instead of
+   the viewport, so the game gets its full desktop layout and nothing crops */
+.hero-view.has-frame{height:auto;min-height:0;aspect-ratio:1280/800}
+
+.hero-overlay{
+  position:absolute;inset:0;z-index:2;
+  background:var(--veil);
+  /* centred, not bottom-anchored: at 1280/800 the panel is tall enough that
+     a bottom-aligned Play it button lands under the fold */
+  display:flex;flex-direction:column;justify-content:center;
+  padding:var(--gutter);
+  color:var(--stone);
+}
+.hero-view.playing .hero-overlay{display:none}
+.hero-overlay h1{font-size:var(--d1);line-height:.92;letter-spacing:-.03em}
+.hero-overlay .lead{
+  font-size:clamp(17px,1.6vw,21px);
+  line-height:1.45;
+  max-width:46ch;
+  margin-top:14px;
+}
+.hero-cta{margin-top:22px;display:flex;flex-wrap:wrap;gap:12px}
+
+.btn{
+  display:inline-block;
+  font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  padding:12px 20px;
+  background:var(--stone);color:var(--ink);
+  border:0;cursor:pointer;text-decoration:none;
+  clip-path:var(--chamfer);
+}
+.btn:hover{background:var(--player-blue);color:var(--stone)}
+.btn[hidden]{display:none}
+
+.tag-btn{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  padding:4px 10px;
+  background:none;color:var(--ink);
+  border:1px solid var(--ink);cursor:pointer;
+}
+.tag-btn:hover{background:var(--hover)}
+.tag-btn[aria-pressed="true"]{background:var(--player-blue);color:var(--stone);border-color:var(--player-blue)}
+.tag-btn[hidden]{display:none}
+
+/* ------------------------------------------------------------------ *
+   section heads
+ * ------------------------------------------------------------------ */
+.sec{display:flex;align-items:center;gap:18px;margin:64px 0 24px}
+.sec h2{font-size:var(--d2);line-height:1;letter-spacing:-.02em;white-space:nowrap}
+.sec .rule{flex:1;border-top:1px solid var(--ink)}
+
+/* ------------------------------------------------------------------ *
+   units
+ * ------------------------------------------------------------------ */
+.unit{margin-bottom:26px}
+.unit .panel{transition:background-color .12s linear}
+.unit[data-selected="true"] .panel{background:var(--player-blue);padding:2px}
+.unit .tag{font-family:var(--mono)}
+.unit[data-selected="true"] .tag{background:var(--player-blue);color:var(--stone);padding:2px 8px;margin:-2px -8px}
+.unit .panel-head:hover{background:var(--hover)}
+
+.unit h3{font-size:var(--d3);line-height:1.05;letter-spacing:-.02em}
+.concept{
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  margin-top:8px;
+}
+.desc{margin-top:10px;max-width:60ch}
+
+.block-label{
+  display:flex;align-items:center;gap:14px;
+  margin:26px 0 12px;
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+}
+.block-label .rule{flex:1;border-top:1px solid var(--ink)}
+.hard{max-width:68ch}
+
+.stats{display:flex;flex-wrap:wrap;gap:14px 0;font-family:var(--mono);font-variant-numeric:tabular-nums}
+.hard + .stats{margin-top:24px}
+/* every cell keeps its rule so a wrapped row reads the same as the first */
+.stats .stat{padding:0 16px;border-left:1px solid var(--ink)}
+.stats .k{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.stats .v{display:block;font-size:15px;line-height:1.4}
+
+.keys{display:grid;grid-template-columns:max-content 1fr;gap:8px 20px;align-items:baseline}
+.keys dt{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--player-blue)}
+.keys dd{font-size:14px;line-height:1.4}
+
+.unit-links{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:26px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+.unit-links .muted{border-bottom:1px solid var(--ink);padding-bottom:2px}
+
+/* split layout — only the Porsche unit */
+.split{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,6fr);gap:var(--gutter)}
+/* no min-height: with aspect-ratio set, a minimum height would drive the
+   width back up and push the panel sideways on narrow screens */
+.viewport{position:relative;overflow:hidden;background:var(--ink);align-self:start;aspect-ratio:1280/800}
+.viewport .load{
+  position:absolute;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--veil);color:var(--stone);
+  font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
+  border:0;cursor:pointer;width:100%;
+}
+.viewport .load:hover{color:var(--player-blue)}
+.viewport .load[hidden]{display:none}
+
+/* ------------------------------------------------------------------ *
+   scaled preview
+   The framed page renders at a fixed logical 1280x800 — a real desktop
+   viewport — and the whole thing is shrunk to fit whatever cell it sits
+   in with transform: scale(k), k = cell width / 1280, anchored top left.
+   The container clips the overflow and carries the same 1280/800 ratio,
+   so the frame lands flush with no crop and no letterbox.
+ * ------------------------------------------------------------------ */
+.preview-frame{
+  position:absolute;top:0;left:0;
+  width:1280px;height:800px;
+  max-width:none;          /* the base reset caps media at 100% — that would
+                              silently shrink the logical viewport back down */
+  border:0;
+  transform-origin:top left;
+  /* transform: scale(k) is set from JS */
+}
+.preview-frame.is-static{pointer-events:none}
+
+.preview-overlay{position:absolute;inset:0;z-index:2;display:block;text-decoration:none}
+.preview-overlay:hover{background:var(--marquee-fill)}
+.preview-overlay:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--player-blue)}
+.preview-tag{
+  position:absolute;right:0;bottom:0;
+  padding:7px 12px;
+  background:var(--stone);color:var(--ink);
+  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  clip-path:polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px);
+}
+.preview-overlay:hover .preview-tag{background:var(--player-blue);color:var(--stone)}
+
+/* ------------------------------------------------------------------ *
+   who / talk
+ * ------------------------------------------------------------------ */
+.who p{max-width:64ch}
+.talk{display:flex;flex-wrap:wrap;gap:20px 56px;align-items:baseline}
+.talk a.big{
+  font-family:var(--display);font-weight:800;font-stretch:125%;text-transform:uppercase;
+  font-size:clamp(20px,2.6vw,34px);line-height:1.1;letter-spacing:-.02em;
+  text-decoration:none;border-bottom:2px solid var(--ink);
+  word-break:break-word;
+}
+.talk a.big:hover{border-bottom-color:var(--player-blue)}
+.talk .channel{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;width:100%}
+
+.foot{
+  margin:64px 0 40px;padding-top:16px;border-top:1px solid var(--ink);
+  font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
+}
+
+/* ------------------------------------------------------------------ *
+   marquee + hud
+ * ------------------------------------------------------------------ */
+#marquee{
+  position:absolute;z-index:50;display:none;
+  border:1px solid var(--player-blue);
+  background:var(--marquee-fill);
+  pointer-events:none;
+}
+body.dragging{user-select:none;-webkit-user-select:none}
+
+#hud{
+  position:fixed;left:0;right:0;bottom:0;z-index:40;
+  height:var(--hud-h);
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  padding:0 var(--gutter);
+  background:var(--stone);
+  border-top:1px solid var(--ink);
+  font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+  font-variant-numeric:tabular-nums;
+  white-space:nowrap;
+}
+#hud[hidden]{display:none}
+#hud .left{display:flex;align-items:center;gap:10px;overflow:hidden;text-overflow:ellipsis}
+#hud-text{white-space:pre}
+#hud .mark{width:9px;height:9px;border:1px solid var(--ink);flex:none}
+#hud .mark.on{background:var(--player-blue);border-color:var(--player-blue)}
+#hud .note{overflow:hidden;text-overflow:ellipsis}
+#hud .note .long{display:inline}
+#hud .note .short{display:none}
+
+/* ------------------------------------------------------------------ *
+   responsive
+ * ------------------------------------------------------------------ */
+@media (max-width:1080px){
+  #hud .note .long{display:none}
+  #hud .note .short{display:inline}
+}
+@media (max-width:900px){
+  /* minmax(0,…) — a bare 1fr keeps an auto minimum and lets a wide child
+     push the column past the panel */
+  .split{grid-template-columns:minmax(0,1fr)}
+  .viewport{aspect-ratio:16/10}
+}
+@media (max-width:720px){
+  body{font-size:16px}
+  /* the overlay stops overlaying here, so the panel must stop being dark
+     under it — otherwise the headline is ink on ink */
+  .hero-view{height:auto;min-height:0;background:none}
+  .hero-shot{height:auto;aspect-ratio:16/9}
+  .hero-overlay{position:static;background:none;color:var(--ink);padding:20px 0 0}
+  .hero-overlay h1{font-size:40px}
+  .select-toggle{display:none}
+  .topbar .where{display:none}
+  .sec{margin:44px 0 20px}
+  .stats .stat{padding:0 12px}
+  .keys{grid-template-columns:1fr;gap:2px 0}
+  .keys dd{margin-bottom:8px}
+  #hud{display:none}
+  body.has-hud{padding-bottom:0}
+}
+@media (max-width:380px){
+  :root{--gutter:14px;--d3:22px}
+  .stats .stat{padding:0;border-left:0;width:50%}
+}
+
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition:none!important;animation:none!important}
+}
+
+/* hotkeys collapse on small screens only */
+.keys-wrap > summary{
+  display:none;
+  list-style:none;
+  font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
+  cursor:pointer;padding:6px 0;
+}
+.keys-wrap > summary::-webkit-details-marker{display:none}
+@media (max-width:720px){
+  .keys-wrap > summary{display:list-item}
+  .keys-wrap > .block-label{display:none}
+  .keys-wrap:not([open]) .keys{display:none}
+}
+</style>
+</head>
+
+<body>
+
+<header class="topbar">
+  <span>Iskander Yusupov &middot; <span data-i18n="ui.role">Frontend</span></span>
+  <span class="where" data-i18n="ui.country">Uzbekistan</span>
+  <div class="lang" role="group" aria-label="Language">
+    <button type="button" id="lang-en" aria-pressed="true">EN</button>
+    <span class="sep" aria-hidden="true">/</span>
+    <button type="button" id="lang-ru" aria-pressed="false">RU</button>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============================== HERO ============================== -->
+  <section class="hero">
+    <div class="panel">
+      <div class="panel-in">
+        <div class="panel-head">
+          <span class="live"><span class="dot" aria-hidden="true"></span><span data-i18n="ui.live">Live</span></span>
+          <span id="hero-state">The Ancient Empires</span>
+          <button type="button" class="tag-btn" id="release" data-i18n="ui.release" hidden>Release control</button>
+        </div>
+
+        <div class="hero-view" id="hero-view">
+          <img class="hero-shot" src="src/img/hero-game.jpg" width="1919" height="1079"
+               alt="The Ancient Empires: a browser real-time strategy game, mid-match, with its resource bar and unit panel visible.">
+          <div class="hero-overlay" id="hero-overlay">
+            <h1>Iskander<br>Yusupov</h1>
+            <p class="lead" data-i18n="hero.lead">I build things that run in a browser. All three below are live — click them.</p>
+            <div class="hero-cta">
+              <button type="button" class="btn" id="play" data-i18n="ui.play" hidden>Play it</button>
+              <a class="btn" id="open-game" data-i18n="ui.opengame" href="https://ancient-empires-blond.vercel.app/" target="_blank" rel="noopener">Open game &#8599;</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================== WORK ============================== -->
+  <div class="sec"><h2>Work</h2><span class="rule"></span></div>
+
+  <!-- unit — The Ancient Empires -->
+  <article class="unit" id="unit-game" data-loc="10605" data-kb="223" data-stack="JS">
+    <div class="panel">
+      <div class="panel-in">
+        <div class="panel-head">
+          <span class="tag">[ unit ]</span>
+          <span data-i18n="kind.rts">Browser RTS</span>
+        </div>
+        <div class="panel-body">
+          <h3>The Ancient Empires</h3>
+          <p class="desc" data-i18n="game.desc">Age of Empires 1, the whole thing in one browser tab.</p>
+
+          <div class="block-label"><span data-i18n="lbl.hard">Hardest part</span><span class="rule"></span></div>
+          <p class="hard" data-i18n="game.hard">Pathfinding is A* on a grid with a smoothing pass on top, so units cut corners instead of walking the staircase a grid gives you. Enemy AI is a state machine per unit — gather, build, attack, fall back — and the maps are generated procedurally, which means the generator has to place resources somewhere that isn't unfair to one side.</p>
+
+          <div class="block-label"><span data-i18n="lbl.build">Build</span><span class="rule"></span></div>
+          <div class="stats">
+            <span class="stat"><span class="k" data-i18n="st.source">Source</span><span class="v" data-i18n="v.onefile">1 HTML file</span></span>
+            <span class="stat"><span class="k" data-i18n="st.lines">Lines</span><span class="v">10,605</span></span>
+            <span class="stat"><span class="k" data-i18n="st.unmin">Unminified</span><span class="v">590 KB</span></span>
+            <span class="stat"><span class="k" data-i18n="st.transfer">Transferred</span><span class="v">208 KB</span></span>
+            <span class="stat"><span class="k" data-i18n="st.requests">Requests</span><span class="v">14</span></span>
+            <span class="stat"><span class="k" data-i18n="st.deps">JS deps</span><span class="v">0</span></span>
+            <span class="stat"><span class="k" data-i18n="st.civs">Civs</span><span class="v">3</span></span>
+            <span class="stat"><span class="k" data-i18n="st.ages">Ages</span><span class="v">2</span></span>
+            <span class="stat"><span class="k" data-i18n="st.res">Resources</span><span class="v">5</span></span>
+            <span class="stat"><span class="k" data-i18n="st.locales">Locales</span><span class="v">EN / RU</span></span>
+          </div>
+
+          <details class="keys-wrap" open>
+            <summary data-i18n="lbl.controls">Controls</summary>
+            <div class="block-label"><span data-i18n="lbl.controls2">Controls</span><span class="rule"></span></div>
+            <dl class="keys">
+              <dt>Ctrl + 1&ndash;9</dt><dd data-i18n="key.groups">control groups</dd>
+              <dt>Shift + RMB</dt><dd data-i18n="key.waypoint">waypoint queue</dd>
+              <dt>Shift + LMB</dt><dd data-i18n="key.build">multi-build</dd>
+              <dt data-i18n="key.dbl">Double click</dt><dd data-i18n="key.type">select every unit of that type on screen</dd>
+            </dl>
+          </details>
+
+          <p class="unit-links">
+            <span class="muted" data-i18n="link.above">Running at the top of this page</span>
+            <a href="https://ancient-empires-blond.vercel.app/" data-i18n="ui.fullscreen" target="_blank" rel="noopener">Open fullscreen &#8599;</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- unit — Porsche 911 Turbo S -->
+  <article class="unit" id="unit-porsche" data-loc="646" data-kb="372" data-stack="CSS">
+    <div class="panel">
+      <div class="panel-in">
+        <div class="panel-head">
+          <span class="tag">[ unit ]</span>
+          <span data-i18n="kind.landing">Landing page</span>
+        </div>
+        <div class="panel-body split">
+          <div class="viewport" id="porsche-view">
+            <button type="button" class="load" id="porsche-load" data-i18n="ui.load">Load preview</button>
+          </div>
+
+          <div>
+            <h3>Porsche 911 Turbo S</h3>
+            <p class="concept" data-i18n="ui.concept">Concept &mdash; not client work</p>
+            <p class="desc" data-i18n="porsche.desc">A landing page built out of typography and two large photographs.</p>
+
+            <div class="block-label"><span data-i18n="lbl.hard2">Hardest part</span><span class="rule"></span></div>
+            <p class="hard" data-i18n="porsche.hard">The page is type and two photographs, so the photographs are the entire budget. They go through an image CDN with format negotiation, which hands a modern browser AVIF instead of JPEG: the hero comes down at 207 KB for a 1600px frame, the second one at 111 KB for 1800px. The hero is eager with a high fetch priority, the second is lazy, and the document itself is 7 KB over the wire.</p>
+
+            <div class="stats">
+              <span class="stat"><span class="k" data-i18n="st.lines2">Lines</span><span class="v">646</span></span>
+              <span class="stat"><span class="k" data-i18n="st.doc">Document</span><span class="v">23 KB</span></span>
+              <span class="stat"><span class="k" data-i18n="st.transfer2">Transferred</span><span class="v">7 KB</span></span>
+              <span class="stat"><span class="k" data-i18n="st.requests2">Requests</span><span class="v">5</span></span>
+              <span class="stat"><span class="k" data-i18n="st.img">Images</span><span class="v">2 / 318 KB</span></span>
+              <span class="stat"><span class="k" data-i18n="st.fonts">Fonts</span><span class="v" data-i18n="v.fonts">1 file / 47 KB</span></span>
+            </div>
+
+            <p class="unit-links">
+              <a href="https://porsche-911-opal.vercel.app/" data-i18n="ui.openlive" target="_blank" rel="noopener">Open live &#8599;</a>
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- unit — Telegram bot -->
+  <article class="unit" id="unit-bot" data-loc="1014" data-stack="PY">
+    <div class="panel">
+      <div class="panel-in">
+        <div class="panel-head">
+          <span class="tag">[ unit ]</span>
+          <span data-i18n="kind.bot">Telegram bot</span>
+        </div>
+        <div class="panel-body">
+          <h3>@Tiktokdownload899bot</h3>
+          <p class="desc" data-i18n="bot.desc">Pulls videos without watermarks out of TikTok, YouTube and Instagram.</p>
+
+          <div class="block-label"><span data-i18n="lbl.hard3">Hardest part</span><span class="rule"></span></div>
+          <p class="hard" data-i18n="bot.hard">TikTok's CDN is blocked by my ISP, so the download path can't go out directly. Traffic runs through a local SOCKS5 proxy: yt-dlp gets its own route, while the Telegram API calls keep going out over the normal one. Keeping both paths alive in a single process, without one of them quietly timing out, took longer than the downloading did.</p>
+
+          <div class="stats">
+            <span class="stat"><span class="k" data-i18n="st.lines3">Lines</span><span class="v">1,014</span></span>
+            <span class="stat"><span class="k" data-i18n="st.lang">Language</span><span class="v">Python</span></span>
+            <span class="stat"><span class="k" data-i18n="st.lib">Library</span><span class="v">python-telegram-bot</span></span>
+            <span class="stat"><span class="k" data-i18n="st.extractor">Extractor</span><span class="v">yt-dlp</span></span>
+            <span class="stat"><span class="k" data-i18n="st.runsin">Runs in</span><span class="v" data-i18n="v.groups">Groups + DM</span></span>
+          </div>
+
+          <p class="unit-links">
+            <a href="https://t.me/Tiktokdownload899bot" data-i18n="ui.opentg" target="_blank" rel="noopener">Open in Telegram &#8599;</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ============================== WHO ============================== -->
+  <div class="sec"><h2>Who</h2><span class="rule"></span></div>
+  <section class="who">
+    <p data-i18n="who.body">I'm Iskander Yusupov. I write frontend for the things that are awkward to build with a framework: real-time games, interfaces that don't follow the usual patterns, tools that have to ship as a single file and keep working. I'm in Uzbekistan and I work with clients abroad. I'm registered as self-employed, I work under a contract, and I take payment by bank transfer.</p>
+  </section>
+
+  <!-- ============================== TALK ============================== -->
+  <div class="sec"><h2>Talk</h2><span class="rule"></span></div>
+  <section class="talk">
+    <a class="big" href="https://t.me/legion899" target="_blank" rel="noopener">@legion899</a>
+    <a class="big" href="mailto:yusupoviskander899@gmail.com">yusupoviskander899@gmail.com</a>
+    <span class="channel"><span data-i18n="ui.channel">Channel:</span> <a href="https://t.me/rylevant" target="_blank" rel="noopener">@rylevant</a></span>
+  </section>
+
+  <p class="foot">Iskander Yusupov &mdash; 2026</p>
+</main>
+
+<div id="marquee" aria-hidden="true"></div>
+
+<div id="hud" role="status" aria-live="polite" hidden>
+  <span class="left">
+    <span class="mark" id="hud-mark" aria-hidden="true"></span>
+    <span id="hud-text">No selection &mdash; drag to select</span>
+  </span>
+  <span class="note">
+    <span class="long" data-i18n="hud.note">Same box-select I wrote for the RTS above</span>
+    <span class="short" data-i18n="hud.note2">Same code as the RTS above</span>
+  </span>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var root = document.documentElement;
+  root.classList.add('js');
+
+  var GAME_URL = 'https://ancient-empires-blond.vercel.app/';
+  var PORSCHE_URL = 'https://porsche-911-opal.vercel.app/';
+
+  /* ---------------------------------------------------------------- *
+     Site address, one constant.
+     Served over http(s) it takes the real origin, so a Vercel preview
+     deployment describes itself correctly with nothing to edit. Opened
+     from disk there is no origin to read, and it falls back to the
+     literal — the same string the four meta tags in <head> carry.
+     Those tags still need their literal: crawlers do not run this file.
+   * ---------------------------------------------------------------- */
+  var SITE_URL = /^https?:$/.test(location.protocol)
+    ? location.origin + '/'
+    : 'https://your-domain.vercel.app/';
+
+  /* path of the share image, relative to the site root — must match the
+     src on .hero-shot and the two literal image tags in <head> */
+  var HERO_IMG = 'src/img/hero-game.jpg';
+
+  [['link[rel="canonical"]', 'href', SITE_URL],
+   ['meta[property="og:url"]', 'content', SITE_URL],
+   ['meta[property="og:image"]', 'content', SITE_URL + HERO_IMG],
+   ['meta[name="twitter:image"]', 'content', SITE_URL + HERO_IMG]
+  ].forEach(function (pair) {
+    var el = document.querySelector(pair[0]);
+    if (el) el.setAttribute(pair[1], pair[2]);
+  });
+
+  /* ---------------------------------------------------------------- *
+     Language.
+     One exception to the switch: the Archivo headings (WORK / WHO /
+     TALK and the project names) stay English in both modes. Archivo
+     ships no Cyrillic subset, so Russian there would silently drop to
+     a system font at weight 800 and look broken next to everything
+     else. Azeret Mono has the same gap, but its fallback is another
+     monospace at 11–12px uppercase, which holds up — so the HUD, the
+     stat keys and the buttons do switch.
+   * ---------------------------------------------------------------- */
+  var STRINGS = {
+    'ui.role':      { en: 'Frontend', ru: 'Фронтенд' },
+    'ui.country':   { en: 'Uzbekistan', ru: 'Узбекистан' },
+    'ui.live':      { en: 'Live', ru: 'Онлайн' },
+    'ui.play':      { en: 'Play it', ru: 'Играть' },
+    'ui.opengame':  { en: 'Open game ↗', ru: 'Открыть игру ↗' },
+    'ui.release':   { en: 'Release control', ru: 'Вернуть управление' },
+    'ui.playing':   { en: 'Game has keyboard control', ru: 'Клавиатура у игры' },
+    'ui.load':      { en: 'Load preview', ru: 'Загрузить превью' },
+    'ui.fullscreen':{ en: 'Open fullscreen ↗', ru: 'Открыть на весь экран ↗' },
+    'ui.openlive':  { en: 'Open live ↗', ru: 'Открыть вживую ↗' },
+    'ui.opentg':    { en: 'Open in Telegram ↗', ru: 'Открыть в Telegram ↗' },
+    'ui.select':    { en: 'Select', ru: 'Выделить' },
+    'ui.open':      { en: 'Open ↗', ru: 'Открыть ↗' },
+    'ui.openlive_aria': { en: 'Open the Porsche 911 landing page in a new tab', ru: 'Открыть лендинг Porsche 911 в новой вкладке' },
+    'ui.channel':   { en: 'Channel:', ru: 'Канал:' },
+    'ui.concept':   { en: 'Concept — not client work', ru: 'Концепт — не клиентский заказ' },
+
+    'kind.rts':     { en: 'Browser RTS', ru: 'Браузерная RTS' },
+    'kind.landing': { en: 'Landing page', ru: 'Лендинг' },
+    'kind.bot':     { en: 'Telegram bot', ru: 'Телеграм-бот' },
+
+    'lbl.hard':     { en: 'Hardest part', ru: 'Самое трудное' },
+    'lbl.hard2':    { en: 'Hardest part', ru: 'Самое трудное' },
+    'lbl.hard3':    { en: 'Hardest part', ru: 'Самое трудное' },
+    'lbl.build':    { en: 'Build', ru: 'Сборка' },
+    'lbl.controls': { en: 'Controls', ru: 'Управление' },
+    'lbl.controls2':{ en: 'Controls', ru: 'Управление' },
+
+    'st.source':    { en: 'Source', ru: 'Исходник' },
+    'st.lines':     { en: 'Lines', ru: 'Строк' },
+    'st.lines2':    { en: 'Lines', ru: 'Строк' },
+    'st.lines3':    { en: 'Lines', ru: 'Строк' },
+    'st.unmin':     { en: 'Unminified', ru: 'Исходный вес' },
+    'st.transfer':  { en: 'Transferred', ru: 'На проводе' },
+    'st.transfer2': { en: 'Transferred', ru: 'На проводе' },
+    'st.requests':  { en: 'Requests', ru: 'Запросов' },
+    'st.requests2': { en: 'Requests', ru: 'Запросов' },
+    'st.deps':      { en: 'JS deps', ru: 'JS-зависимостей' },
+    'st.civs':      { en: 'Civs', ru: 'Цивилизаций' },
+    'st.ages':      { en: 'Ages', ru: 'Эпох' },
+    'st.res':       { en: 'Resources', ru: 'Ресурсов' },
+    'st.locales':   { en: 'Locales', ru: 'Языки' },
+    'st.doc':       { en: 'Document', ru: 'Документ' },
+    'st.img':       { en: 'Images', ru: 'Фото' },
+    'st.fonts':     { en: 'Fonts', ru: 'Шрифты' },
+    'st.lang':      { en: 'Language', ru: 'Язык' },
+    'st.lib':       { en: 'Library', ru: 'Библиотека' },
+    'st.extractor': { en: 'Extractor', ru: 'Экстрактор' },
+    'st.runsin':    { en: 'Runs in', ru: 'Работает в' },
+
+    'v.onefile':    { en: '1 HTML file', ru: '1 HTML-файл' },
+    'v.fonts':      { en: '1 file / 47 KB', ru: '1 файл / 47 KB' },
+    'v.groups':     { en: 'Groups + DM', ru: 'Группы и личка' },
+
+    'key.dbl':      { en: 'Double click', ru: 'Двойной клик' },
+
+    'hud.idle':     { en: 'No selection — drag to select', ru: 'Ничего не выделено — тяните рамку' },
+    'hud.selected': { en: 'selected', ru: 'выделено' },
+    'hud.size':     { en: 'Size', ru: 'Вес' },
+    'hud.stack':    { en: 'Stack', ru: 'Стек' },
+    'hud.note':     { en: 'Same box-select I wrote for the RTS above', ru: 'Та же рамка выделения, что я написал для RTS наверху' },
+    'hud.note2':    { en: 'Same code as the RTS above', ru: 'Тот же код, что в RTS наверху' },
+
+    'hero.lead': {
+      en: 'I build things that run in a browser. All three below are live — click them.',
+      ru: 'Я делаю штуки, которые работают в браузере. Все три ниже — живые, их можно потрогать прямо здесь.'
+    },
+    'game.desc': {
+      en: 'Age of Empires 1, the whole thing in one browser tab.',
+      ru: 'Age of Empires 1 целиком в одной вкладке браузера.'
+    },
+    'game.hard': {
+      en: 'Pathfinding is A* on a grid with a smoothing pass on top, so units cut corners instead of walking the staircase a grid gives you. Enemy AI is a state machine per unit — gather, build, attack, fall back — and the maps are generated procedurally, which means the generator has to place resources somewhere that isn’t unfair to one side.',
+      ru: 'Поиск пути — A* по сетке плюс проход сглаживания, чтобы юниты срезали углы, а не шли лесенкой, которую выдаёт сетка. Вражеский ИИ — конечный автомат на каждого юнита: собирать, строить, атаковать, отходить. Карты генерируются процедурно, а значит генератор обязан раскладывать ресурсы так, чтобы ни одной стороне не досталось нечестно.'
+    },
+    'porsche.desc': {
+      en: 'A landing page built out of typography and two large photographs.',
+      ru: 'Лендинг, собранный на типографике и двух крупных фотографиях.'
+    },
+    'porsche.hard': {
+      en: 'The page is type and two photographs, so the photographs are the entire budget. They go through an image CDN with format negotiation, which hands a modern browser AVIF instead of JPEG: the hero comes down at 207 KB for a 1600px frame, the second one at 111 KB for 1800px. The hero is eager with a high fetch priority, the second is lazy, and the document itself is 7 KB over the wire.',
+      ru: 'Страница — это шрифт и две фотографии, поэтому фотографии и есть весь бюджет. Они идут через CDN с согласованием формата: современный браузер получает AVIF вместо JPEG. Первое фото — 207 КБ на ширине 1600 пикселей, второе — 111 КБ на 1800. Первое грузится сразу и с высоким приоритетом, второе — лениво, а сам документ весит 7 КБ на проводе.'
+    },
+    'bot.desc': {
+      en: 'Pulls videos without watermarks out of TikTok, YouTube and Instagram.',
+      ru: 'Достаёт видео без водяных знаков из TikTok, YouTube и Instagram.'
+    },
+    'bot.hard': {
+      en: 'TikTok’s CDN is blocked by my ISP, so the download path can’t go out directly. Traffic runs through a local SOCKS5 proxy: yt-dlp gets its own route, while the Telegram API calls keep going out over the normal one. Keeping both paths alive in a single process, without one of them quietly timing out, took longer than the downloading did.',
+      ru: 'CDN TikTok заблокирован моим провайдером, поэтому напрямую качать нельзя. Трафик идёт через локальный SOCKS5-прокси: у yt-dlp свой маршрут, а вызовы Telegram API продолжают ходить обычным. Держать оба маршрута живыми в одном процессе так, чтобы ни один тихо не отваливался по таймауту, оказалось дольше, чем сама выкачка.'
+    },
+    'key.groups':   { en: 'control groups', ru: 'контрольные группы' },
+    'key.waypoint': { en: 'waypoint queue', ru: 'очередь путевых точек' },
+    'key.build':    { en: 'multi-build', ru: 'мультипостройка' },
+    'key.type':     { en: 'select every unit of that type on screen', ru: 'выделить все юниты этого типа на экране' },
+    'link.above':   { en: 'Running at the top of this page', ru: 'Работает наверху этой страницы' },
+    'who.body': {
+      en: 'I’m Iskander Yusupov. I write frontend for the things that are awkward to build with a framework: real-time games, interfaces that don’t follow the usual patterns, tools that have to ship as a single file and keep working. I’m in Uzbekistan and I work with clients abroad. I’m registered as self-employed, I work under a contract, and I take payment by bank transfer.',
+      ru: 'Меня зовут Искандер Юсупов. Я пишу фронтенд для того, что неудобно собирать фреймворком: игры реального времени, интерфейсы, которые не ложатся в привычные шаблоны, инструменты, которые должны уехать одним файлом и продолжать работать. Живу в Узбекистане, работаю с заказчиками из-за рубежа. Оформлен как самозанятый, работаю по договору, оплата — банковским переводом.'
+    }
+  };
+
+  var btnEn = document.getElementById('lang-en');
+  var btnRu = document.getElementById('lang-ru');
+  var lang = 'en';
+  var afterLang = [];
+
+  function t(key) {
+    return (STRINGS[key] && STRINGS[key][lang]) || '';
+  }
+
+  function setLang(next) {
+    lang = next;
+    var nodes = document.querySelectorAll('[data-i18n]');
+    for (var i = 0; i < nodes.length; i++) {
+      var s = t(nodes[i].getAttribute('data-i18n'));
+      if (s) nodes[i].textContent = s;
+    }
+    var labelled = document.querySelectorAll('[data-i18n-aria]');
+    for (var j = 0; j < labelled.length; j++) {
+      var a = t(labelled[j].getAttribute('data-i18n-aria'));
+      if (a) labelled[j].setAttribute('aria-label', a);
+    }
+    root.lang = next;
+    btnEn.setAttribute('aria-pressed', String(next === 'en'));
+    btnRu.setAttribute('aria-pressed', String(next === 'ru'));
+    afterLang.forEach(function (fn) { fn(); });
+    try { localStorage.setItem('lang', next); } catch (e) {}
+  }
+
+  btnEn.addEventListener('click', function () { setLang('en'); });
+  btnRu.addEventListener('click', function () { setLang('ru'); });
+
+  var saved = null;
+  try { saved = localStorage.getItem('lang'); } catch (e) {}
+  if (saved === 'ru') setLang('ru');
+
+  /* ---------------------------------------------------------------- *
+     Hero. The iframe is 208 KB over the wire, so it is only built on a
+     desktop pointer. Everyone else keeps the screenshot and the link
+     that are already in the markup — which is also what a visitor
+     without JS gets.
+   * ---------------------------------------------------------------- */
+  var heroView = document.getElementById('hero-view');
+  var heroState = document.getElementById('hero-state');
+  var playBtn = document.getElementById('play');
+  var openGame = document.getElementById('open-game');
+  var releaseBtn = document.getElementById('release');
+  var fine = window.matchMedia('(hover: hover) and (pointer: fine)');
+  var wide = window.matchMedia('(min-width: 900px)');
+  var frame = null;
+
+  /* A framed page laid out at a fixed logical width, then scaled down to
+     whatever cell it has to live in. Scaling does not break pointer input:
+     the browser maps coordinates through the transform, so the hero frame
+     stays playable while the Porsche one is deliberately inert. */
+  var LOGICAL_W = 1280;
+
+  function fitPreview(box, el) {
+    function fit() {
+      el.style.transform = 'scale(' + (box.getBoundingClientRect().width / LOGICAL_W) + ')';
+    }
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(box);
+    else window.addEventListener('resize', fit);
+    fit();
+  }
+
+  if (fine.matches && wide.matches) {
+    frame = document.createElement('iframe');
+    frame.className = 'preview-frame';
+    frame.title = 'The Ancient Empires';
+    frame.setAttribute('tabindex', '-1');
+    frame.setAttribute('inert', '');
+    frame.setAttribute('loading', 'eager');
+    frame.setAttribute('scrolling', 'no');
+    frame.src = GAME_URL;
+    heroView.insertBefore(frame, heroView.firstChild);
+    heroView.classList.add('has-frame');
+    fitPreview(heroView, frame);
+
+    playBtn.hidden = false;
+    openGame.hidden = true;
+
+    var playing = false;
+    function paintState() {
+      heroState.textContent = playing ? t('ui.playing') : 'The Ancient Empires';
+    }
+    afterLang.push(paintState);
+
+    playBtn.addEventListener('click', function () {
+      playing = true;
+      heroView.classList.add('playing');
+      frame.removeAttribute('inert');
+      releaseBtn.hidden = false;
+      paintState();
+      frame.focus();
+    });
+
+    releaseBtn.addEventListener('click', function () {
+      playing = false;
+      heroView.classList.remove('playing');
+      frame.setAttribute('inert', '');
+      releaseBtn.hidden = true;
+      paintState();
+      playBtn.focus();
+    });
+  }
+
+  /* Mouse chords are useless on a phone — fold the hotkeys away there.
+     720px, the same breakpoint where the CSS reveals <summary>: fold it
+     anywhere the user can't unfold it and the block just vanishes. */
+  if (window.matchMedia('(max-width: 720px)').matches) {
+    var keysWrap = document.querySelector('.keys-wrap');
+    if (keysWrap) keysWrap.removeAttribute('open');
+  }
+
+  /* Porsche preview: nothing loads until it is asked for. */
+  var porscheView = document.getElementById('porsche-view');
+  var porscheLoad = document.getElementById('porsche-load');
+  porscheLoad.addEventListener('click', function () {
+    var f = document.createElement('iframe');
+    f.className = 'preview-frame is-static';
+    f.title = 'Porsche 911 Turbo S landing page';
+    f.src = PORSCHE_URL;
+    f.setAttribute('loading', 'lazy');
+    f.setAttribute('scrolling', 'no');
+    porscheView.insertBefore(f, porscheView.firstChild);
+
+    /* the frame itself takes no input — the click target is this overlay */
+    var over = document.createElement('a');
+    over.className = 'preview-overlay';
+    over.href = PORSCHE_URL;
+    over.target = '_blank';
+    over.rel = 'noopener';
+    over.setAttribute('data-i18n-aria', 'ui.openlive_aria');
+    over.setAttribute('aria-label', t('ui.openlive_aria'));
+    var tag = document.createElement('span');
+    tag.className = 'preview-tag';
+    tag.setAttribute('data-i18n', 'ui.open');
+    tag.textContent = t('ui.open');
+    over.appendChild(tag);
+    porscheView.appendChild(over);
+
+    porscheLoad.hidden = true;
+    fitPreview(porscheView, f);
+  });
+
+  /* ---------------------------------------------------------------- *
+     Box select. Same primitive as the RTS above: press on empty space,
+     drag, anything the rectangle touches is selected.
+   * ---------------------------------------------------------------- */
+  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (!fine.matches || reduce.matches) return;
+
+  var units = [].slice.call(document.querySelectorAll('.unit'));
+  var marquee = document.getElementById('marquee');
+  var hud = document.getElementById('hud');
+  var hudText = document.getElementById('hud-text');
+  var hudMark = document.getElementById('hud-mark');
+
+  hud.hidden = false;
+  document.body.classList.add('has-hud');
+
+  /* A keyboard route to the same state, without nesting a button
+     inside a panel that already contains links. */
+  units.forEach(function (unit) {
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'tag-btn select-toggle';
+    btn.setAttribute('data-i18n', 'ui.select');
+    btn.textContent = t('ui.select');
+    btn.setAttribute('aria-pressed', 'false');
+    btn.addEventListener('click', function () {
+      setSelected(unit, unit.dataset.selected !== 'true');
+      render();
+    });
+    unit.querySelector('.panel-head').appendChild(btn);
+  });
+
+  function setSelected(unit, on) {
+    if (on) unit.dataset.selected = 'true';
+    else delete unit.dataset.selected;
+    unit.querySelector('.select-toggle').setAttribute('aria-pressed', String(!!on));
+  }
+
+  function clearAll() {
+    units.forEach(function (u) { setSelected(u, false); });
+  }
+
+  function render() {
+    var sel = units.filter(function (u) { return u.dataset.selected === 'true'; });
+    if (!sel.length) {
+      hudMark.classList.remove('on');
+      hudText.textContent = t('hud.idle');
+      return;
+    }
+    hudMark.classList.add('on');
+
+    var loc = 0, kb = 0, hasKb = false, stack = [];
+    sel.forEach(function (u) {
+      loc += parseInt(u.dataset.loc, 10) || 0;
+      if (u.dataset.kb) { kb += parseInt(u.dataset.kb, 10); hasKb = true; }
+      if (stack.indexOf(u.dataset.stack) === -1) stack.push(u.dataset.stack);
+    });
+
+    var parts = [sel.length + ' ' + t('hud.selected'), 'LOC ' + loc.toLocaleString('en-US')];
+    if (hasKb) parts.push(t('hud.size') + ' ' + kb + ' KB');
+    parts.push(t('hud.stack') + ' ' + stack.join(' · '));
+    hudText.textContent = parts.join('   ');
+  }
+  afterLang.push(render);
+
+  function pageBox(el) {
+    var r = el.getBoundingClientRect();
+    return {
+      l: r.left + window.scrollX, t: r.top + window.scrollY,
+      r: r.right + window.scrollX, b: r.bottom + window.scrollY
+    };
+  }
+
+  var start = null, dragging = false, additive = false, base = [];
+
+  document.addEventListener('pointerdown', function (e) {
+    if (e.button !== 0 || e.pointerType !== 'mouse') return;
+    /* below this width the HUD is gone, so selection would be invisible */
+    if (window.innerWidth <= 720) return;
+    /* prose stays draggable as text — the marquee starts on empty ground */
+    if (e.target.closest('a, button, summary, input, select, textarea, iframe, .hero, #hud, p, h3, dt, dd, .stats')) return;
+
+    start = { x: e.pageX, y: e.pageY };
+    dragging = false;
+    additive = e.shiftKey;
+    base = additive ? units.filter(function (u) { return u.dataset.selected === 'true'; }) : [];
+  });
+
+  document.addEventListener('pointermove', function (e) {
+    if (!start) return;
+
+    var x = e.pageX, y = e.pageY;
+    if (!dragging) {
+      if (Math.abs(x - start.x) < 4 && Math.abs(y - start.y) < 4) return;
+      dragging = true;
+      marquee.style.display = 'block';
+      document.body.classList.add('dragging');
+    }
+
+    var box = {
+      l: Math.min(start.x, x), t: Math.min(start.y, y),
+      r: Math.max(start.x, x), b: Math.max(start.y, y)
+    };
+    marquee.style.left = box.l + 'px';
+    marquee.style.top = box.t + 'px';
+    marquee.style.width = (box.r - box.l) + 'px';
+    marquee.style.height = (box.b - box.t) + 'px';
+
+    /* three panels — reading them fresh is cheaper than keeping a cache
+       honest across scroll and resize */
+    units.forEach(function (u) {
+      var p = pageBox(u);
+      var hit = !(p.r < box.l || p.l > box.r || p.b < box.t || p.t > box.b);
+      setSelected(u, hit || base.indexOf(u) !== -1);
+    });
+    render();
+  });
+
+  function endDrag() {
+    if (!start) return;
+    if (!dragging) { clearAll(); render(); }
+    start = null;
+    dragging = false;
+    marquee.style.display = 'none';
+    document.body.classList.remove('dragging');
+  }
+
+  document.addEventListener('pointerup', endDrag);
+  document.addEventListener('pointercancel', endDrag);
+
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { clearAll(); render(); }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
