@@ -2,1038 +2,1621 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Iskander Yusupov — frontend for things that run in a browser</title>
-<meta name="description" content="Frontend developer. Browser RTS, unusual interfaces, tools that ship as one file. Three live projects you can click.">
-
-<!-- ===================================================================
-     SITE ADDRESS — the only four literals that carry it, kept together.
-
-     Telegram, Twitter and Slack fetch the raw HTML and never execute the
-     script, so these four values have to be real absolute strings in the
-     markup. A JS constant alone would leave every crawler with nothing.
-     SITE_URL at the top of the script is the runtime source of truth and
-     rewrites all four on load; these literals are the copy crawlers read.
-
-     One find-and-replace of your-domain.vercel.app covers all of them.
-     =================================================================== -->
-<link rel="canonical"      href="https://portfolio-kappa-wheat-1gp2kpd9gl.vercel.app/">
-<meta property="og:url"    content="https://portfolio-kappa-wheat-1gp2kpd9gl.vercel.app/">
-<meta property="og:image"  content="https://portfolio-kappa-wheat-1gp2kpd9gl.vercel.app/hero-game.jpg">
-<meta name="twitter:image" content="https://portfolio-kappa-wheat-1gp2kpd9gl.vercel.app/hero-game.jpg">
-
-<meta property="og:type" content="website">
-<meta property="og:site_name" content="Iskander Yusupov">
-<meta property="og:locale" content="en_US">
-<meta property="og:locale:alternate" content="ru_RU">
-<meta property="og:title" content="Iskander Yusupov — I build things that run in a browser">
-<meta property="og:description" content="A browser RTS in one HTML file with no dependencies, a typographic landing page, a Telegram downloader bot. All three are live and you can click them.">
-<meta property="og:image:type" content="image/jpeg">
-<meta property="og:image:width" content="1919">
-<meta property="og:image:height" content="1079">
-<meta property="og:image:alt" content="The Ancient Empires: a browser real-time strategy game mid-match.">
-
-<meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Iskander Yusupov — I build things that run in a browser">
-<meta name="twitter:description" content="A browser RTS in one HTML file with no dependencies, a typographic landing page, a Telegram downloader bot. All three are live and you can click them.">
-<meta name="twitter:image:alt" content="The Ancient Empires: a browser real-time strategy game mid-match.">
-
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Iskander Yusupov — LEGION CODES</title>
+<meta name="description" content="Frontend developer. Browser games, Telegram bots and interfaces that ship as a single file. The game below runs right on the page.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@125,800&family=Azeret+Mono:wght@400&family=Jost:wght@400;500&display=swap">
-
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;600;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
-/* ------------------------------------------------------------------ *
-   tokens
- * ------------------------------------------------------------------ */
-:root{
-  --stone:#B9B3A5;
-  --stone-dark:#8E897C;
-  --ink:#20221F;
-  --player-blue:#2F5FBF;
-  --player-red:#C4453A;
+  *{margin:0;padding:0;box-sizing:border-box}
+  html{background:#000;scroll-behavior:smooth}
+  body{min-height:100%;background:#000}
+  body:not(.revealed){height:100%;overflow:hidden}
+  body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;cursor:crosshair}
+  canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+  #bg{z-index:1}
+  #fx{z-index:2}
 
-  /* derived: alpha only, no new hues */
-  --veil:rgba(32,34,31,.82);
-  --hover:rgba(32,34,31,.06);
-  --marquee-fill:rgba(47,95,191,.12);
+  .ui{position:fixed;inset:0;z-index:3;pointer-events:none}
+  .corner{
+    position:absolute;width:54px;height:54px;
+    border:1px solid rgba(190,215,255,.22);
+    opacity:0;transition:opacity 1.6s ease .2s;
+  }
+  .corner.tl{top:26px;left:26px;border-right:0;border-bottom:0}
+  .corner.tr{top:26px;right:26px;border-left:0;border-bottom:0}
+  .corner.bl{bottom:26px;left:26px;border-right:0;border-top:0}
+  .corner.br{bottom:26px;right:26px;border-left:0;border-top:0}
 
-  --chamfer:polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
-  --chamfer-in:polygon(0 0, calc(100% - 11px) 0, 100% 11px, 100% 100%, 0 100%);
+  #flash{
+    position:fixed;inset:0;z-index:4;pointer-events:none;opacity:0;
+    background:radial-gradient(ellipse 80% 45% at 50% 50%,
+      rgba(255,255,255,.95), rgba(215,238,255,.45) 34%, rgba(255,255,255,0) 70%);
+    mix-blend-mode:screen;
+  }
+  #vignette{
+    position:fixed;inset:0;z-index:5;pointer-events:none;
+    background:radial-gradient(ellipse at 50% 50%,transparent 38%,rgba(0,0,0,.72) 100%);
+  }
+  #grain{
+    position:fixed;inset:-9%;z-index:6;pointer-events:none;opacity:.04;
+    background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3'/></filter><rect width='140' height='140' filter='url(%23n)'/></svg>");
+    animation:grain 1.1s steps(4) infinite;
+  }
+  @keyframes grain{
+    0%{transform:translate(0,0)}25%{transform:translate(-3%,2%)}
+    50%{transform:translate(2%,-3%)}75%{transform:translate(-2%,-2%)}100%{transform:translate(0,0)}
+  }
 
-  /* Jost carries Cyrillic itself (U+0400–045F), so RU prose stays in the
-     display face. Archivo and Azeret Mono do not — nothing Cyrillic is
-     set in Archivo, and the mono fallbacks below all cover Russian. */
-  --display:'Archivo',Arial,sans-serif;
-  --text:'Jost',system-ui,'Segoe UI',Roboto,sans-serif;
-  --mono:'Azeret Mono','Cascadia Mono',Consolas,'DejaVu Sans Mono','Liberation Mono',monospace;
+  #replay{
+    position:fixed;z-index:7;right:26px;bottom:26px;
+    padding:11px 20px;border:1px solid rgba(190,215,255,.28);
+    background:rgba(6,6,10,.5);backdrop-filter:blur(6px);
+    color:#cfe0f5;font:600 10px/1 "Segoe UI",system-ui,sans-serif;
+    letter-spacing:.36em;text-transform:uppercase;cursor:pointer;
+    opacity:0;transition:opacity .8s ease,background .25s,color .25s,border-color .25s;
+  }
+  #replay:hover{background:rgba(40,48,64,.55);color:#fff;border-color:rgba(230,240,255,.75)}
+  #replay.show{opacity:.75}
 
-  --d1:clamp(40px,6vw,82px);
-  --d2:clamp(28px,3.5vw,44px);
-  --d3:clamp(24px,3vw,36px);
+  @media (max-width:640px){
+    .corner{width:34px;height:34px}
+    #replay{right:16px;bottom:16px;letter-spacing:.24em}
+  }
 
-  --hud-h:34px;
-  --gutter:clamp(16px,4vw,40px);
-}
+  /* =======================================================
+     the page below the intro — strict black, no colour
+     ======================================================= */
+  :root{
+    --ice:#EFEFEF; --mid:#A6A6A6; --dim:#767676;
+    --line:rgba(255,255,255,.13); --line-hot:rgba(255,255,255,.42);
+    --panel:rgba(0,0,0,.58);
+    --disp:"Archivo",Impact,system-ui,sans-serif;
+    --mono:"JetBrains Mono",ui-monospace,monospace;
+    --pad:clamp(20px,5vw,64px);
+    --ease:cubic-bezier(.16,.8,.3,1);
+  }
 
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;border-radius:0}
+  #bg{transition:opacity .9s ease}
+  #fx{transition:opacity .35s linear}
 
-html{-webkit-text-size-adjust:100%}
-body{
-  background:var(--stone);
-  color:var(--ink);
-  font-family:var(--text);
-  font-size:17px;
-  line-height:1.65;
-  overflow-x:hidden;
-}
-body.has-hud{padding-bottom:var(--hud-h)}
+  #site{
+    position:relative;z-index:8;font-family:var(--disp);color:var(--ice);
+    opacity:0;pointer-events:none;transition:opacity 1.2s ease;
+  }
+  body.revealed #site{opacity:1;pointer-events:auto}
+  #grain{z-index:9}
+  #replay{z-index:11}
+  #hero-space{height:100vh;pointer-events:none}
 
-img,video,iframe{display:block;max-width:100%}
+  /* ---------- reveal system ---------- */
+  [data-rv]{
+    opacity:0;transform:translateY(24px);
+    transition:opacity .8s var(--ease),transform .8s var(--ease);
+    transition-delay:calc(var(--i,0) * 65ms);
+  }
+  [data-rv].in{opacity:1;transform:none}
 
-h1,h2,h3{
-  font-family:var(--display);
-  font-weight:800;
-  font-stretch:125%;
-  text-transform:uppercase;
-}
-/* @Tiktokdownload899bot is one 21-character token — let it break rather
-   than push the whole page sideways on a 360px screen */
-h1,h3{overflow-wrap:anywhere}
+  [data-rv="mask"]{
+    opacity:1;transform:none;clip-path:inset(0 0 102% 0);
+    transition:clip-path .95s var(--ease);
+    transition-delay:calc(var(--i,0) * 65ms);
+  }
+  [data-rv="mask"].in{clip-path:inset(0 0 -10% 0)}
 
-a{color:var(--ink);text-underline-offset:3px;text-decoration-thickness:1px}
-a:hover{color:var(--player-blue)}
+  [data-rv="line"]{
+    opacity:1;transform:scaleX(0);transform-origin:left;
+    transition:transform 1s var(--ease);
+    transition-delay:calc(var(--i,0) * 65ms);
+  }
+  [data-rv="line"].in{transform:none}
 
-/* focus: outline for plain boxes, inset ring where clip-path would eat it */
-:focus-visible{outline:2px solid var(--player-blue);outline-offset:2px}
-.chamfered:focus-visible,.btn:focus-visible,.tag-btn:focus-visible{
-  outline:none;
-  box-shadow:inset 0 0 0 2px var(--player-blue);
-}
-/* a blue ring on a blue fill is no ring at all */
-.tag-btn[aria-pressed="true"]:focus-visible,
-.lang button[aria-pressed="true"]:focus-visible{
-  outline:none;
-  box-shadow:inset 0 0 0 2px var(--stone);
-}
+  [data-rv="fade"]{transform:none}
 
-/* ------------------------------------------------------------------ *
-   panel: 1px ink border that follows the bevel (two clipped layers)
- * ------------------------------------------------------------------ */
-.panel{background:var(--ink);padding:1px;clip-path:var(--chamfer)}
-.panel > .panel-in{background:var(--stone-dark);clip-path:var(--chamfer-in)}
+  /* ---------- scroll cue ---------- */
+  #cue{
+    position:fixed;z-index:10;left:50%;bottom:34px;transform:translateX(-50%);
+    display:flex;flex-direction:column;align-items:center;gap:11px;
+    font-family:var(--mono);font-size:9.5px;letter-spacing:.42em;
+    text-transform:uppercase;color:rgba(255,255,255,.55);
+    opacity:0;transition:opacity 1s ease;pointer-events:none;
+  }
+  #cue.show{opacity:1}
+  #cue.gone{opacity:0}
+  #cue .bar{
+    width:1px;height:44px;transform-origin:top;
+    background:linear-gradient(to bottom,rgba(255,255,255,0),rgba(255,255,255,.85));
+    animation:drop 2.1s ease-in-out infinite;
+  }
+  @keyframes drop{
+    0%,100%{transform:scaleY(.35);opacity:.3}
+    50%{transform:scaleY(1);opacity:1}
+  }
 
-.panel-head{
-  display:flex;
-  align-items:center;
-  justify-content:space-between;
-  gap:12px;
-  flex-wrap:wrap;
-  padding:9px 14px;
-  border-bottom:1px solid var(--ink);
-  font-family:var(--mono);
-  font-size:11px;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-}
-.panel-body{padding:22px var(--gutter) 26px}
+  #mark{
+    position:fixed;z-index:10;top:24px;left:var(--pad);
+    font-weight:800;font-size:13px;letter-spacing:.3em;color:var(--ice);
+    opacity:0;transform:translateY(-8px);
+    transition:opacity .5s ease,transform .5s ease;pointer-events:none;
+  }
+  #mark.show{opacity:.85;transform:none}
 
-/* ------------------------------------------------------------------ *
-   top bar
- * ------------------------------------------------------------------ */
-.topbar{
-  position:sticky;top:0;z-index:30;
-  display:flex;align-items:center;justify-content:space-between;gap:16px;
-  padding:10px var(--gutter);
-  background:var(--stone);
-  border-bottom:1px solid var(--ink);
-  font-family:var(--mono);
-  font-size:11px;
-  letter-spacing:.14em;
-  text-transform:uppercase;
-}
-.topbar .where{flex:1}
-.lang{display:flex;align-items:center;gap:0}
-.lang button{
-  font:inherit;letter-spacing:inherit;text-transform:inherit;
-  background:none;border:0;color:var(--ink);
-  padding:3px 8px;cursor:pointer;
-}
-.lang button[aria-pressed="true"]{background:var(--player-blue);color:var(--stone)}
-.lang .sep{padding:0 2px}
+  .shell{max-width:1180px;margin:0 auto;padding:0 var(--pad)}
 
-/* ------------------------------------------------------------------ *
-   hero
- * ------------------------------------------------------------------ */
-.wrap{max-width:1180px;margin:0 auto;padding:0 var(--gutter)}
-.hero{padding-top:var(--gutter)}
+  /* ---------- lead ---------- */
+  .lead{padding:clamp(40px,9vh,110px) 0 clamp(30px,6vh,64px)}
+  .tag{font-family:var(--mono);font-size:10px;letter-spacing:.4em;
+       text-transform:uppercase;color:var(--dim);margin:0 0 20px}
+  .lead h2{font-weight:800;font-size:clamp(30px,5.6vw,60px);line-height:1.02;
+           letter-spacing:-.025em;margin:0 0 20px;max-width:17ch}
+  .lead p{margin:0;max-width:52ch;font-size:clamp(14.5px,1.7vw,17px);
+          line-height:1.7;color:var(--mid)}
+  .rule{height:1px;background:var(--line);margin:0 0 clamp(26px,4vw,44px)}
 
-.live{display:flex;align-items:center;gap:7px;color:var(--player-red)}
-.live .dot{width:8px;height:8px;background:var(--player-red)}
+  /* ---------- projects ---------- */
+  .work{padding-bottom:clamp(40px,8vh,90px)}
+  .proj{
+    position:relative;padding:clamp(22px,3.4vw,38px);
+    margin-bottom:clamp(18px,3vw,30px);
+    background:var(--panel);
+    backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);
+    border:1px solid var(--line);
+    transition:border-color .3s ease;
+  }
+  .proj:hover{border-color:var(--line-hot)}
+  .proj::before,.proj::after{
+    content:"";position:absolute;width:16px;height:16px;
+    border:1px solid rgba(255,255,255,.75);opacity:0;
+    transition:opacity .3s ease;pointer-events:none;
+  }
+  .proj::before{top:-1px;left:-1px;border-right:0;border-bottom:0}
+  .proj::after{bottom:-1px;right:-1px;border-left:0;border-top:0}
+  .proj:hover::before,.proj:hover::after{opacity:1}
 
-.hero-view{position:relative;height:68vh;min-height:420px;overflow:hidden;background:var(--ink)}
-.hero-shot{width:100%;height:100%;object-fit:cover}
-.hero-view.has-frame .hero-shot{display:none}
-/* once the real frame is in, the box tracks the logical 1280x800 instead of
-   the viewport, so the game gets its full desktop layout and nothing crops */
-.hero-view.has-frame{height:auto;min-height:0;aspect-ratio:1280/800}
+  .kind{font-family:var(--mono);font-size:9.5px;letter-spacing:.34em;
+        text-transform:uppercase;color:var(--dim);margin:0 0 11px}
+  .proj h3{font-weight:800;font-size:clamp(22px,3.1vw,34px);line-height:1.06;
+           letter-spacing:-.022em;margin:0 0 14px}
+  .what{margin:0 0 16px;font-size:15px;line-height:1.65;color:var(--ice);max-width:60ch}
+  .hard{position:relative;margin:0;padding-left:15px;font-size:14px;
+        line-height:1.7;color:var(--mid);max-width:62ch}
+  .hard::before{
+    content:"";position:absolute;left:0;top:0;bottom:0;width:1px;
+    background:rgba(255,255,255,.3);transform:scaleY(0);transform-origin:top;
+    transition:transform .9s var(--ease) .15s;
+  }
+  .proj.seen .hard::before{transform:none}
+  .hard b{color:var(--ice);font-weight:600}
 
-.hero-overlay{
-  position:absolute;inset:0;z-index:2;
-  background:var(--veil);
-  /* centred, not bottom-anchored: at 1280/800 the panel is tall enough that
-     a bottom-aligned Play it button lands under the fold */
-  display:flex;flex-direction:column;justify-content:center;
-  padding:var(--gutter);
-  color:var(--stone);
-}
-.hero-view.playing .hero-overlay{display:none}
-.hero-overlay h1{font-size:var(--d1);line-height:.92;letter-spacing:-.03em}
-.hero-overlay .lead{
-  font-size:clamp(17px,1.6vw,21px);
-  line-height:1.45;
-  max-width:46ch;
-  margin-top:14px;
-}
-.hero-cta{margin-top:22px;display:flex;flex-wrap:wrap;gap:12px}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:clamp(20px,3.6vw,44px);align-items:start}
+  .proj.flip .split{direction:rtl}
+  .proj.flip .split > *{direction:ltr}
 
-.btn{
-  display:inline-block;
-  font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
-  padding:12px 20px;
-  background:var(--stone);color:var(--ink);
-  border:0;cursor:pointer;text-decoration:none;
-  clip-path:var(--chamfer);
-}
-.btn:hover{background:var(--player-blue);color:var(--stone)}
-.btn[hidden]{display:none}
+  .stats{list-style:none;margin:20px 0 0;padding:0;
+         font-family:var(--mono);font-size:11.5px;line-height:1.5}
+  .stats li{display:flex;justify-content:space-between;gap:14px;padding:7px 0;
+            border-bottom:1px dashed rgba(255,255,255,.11)}
+  .stats li span:first-child{color:var(--dim);letter-spacing:.06em}
+  .stats li span:last-child{color:var(--ice);text-align:right}
 
-.tag-btn{
-  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
-  padding:4px 10px;
-  background:none;color:var(--ink);
-  border:1px solid var(--ink);cursor:pointer;
-}
-.tag-btn:hover{background:var(--hover)}
-.tag-btn[aria-pressed="true"]{background:var(--player-blue);color:var(--stone);border-color:var(--player-blue)}
-.tag-btn[hidden]{display:none}
+  .keys{margin:20px 0 0}
+  .keys > p{font-family:var(--mono);font-size:9.5px;letter-spacing:.3em;
+            text-transform:uppercase;color:var(--dim);margin:0 0 10px}
+  .keys dl{display:grid;grid-template-columns:auto 1fr;gap:7px 16px;margin:0;font-size:12.5px}
+  .keys dt{font-family:var(--mono);font-size:11px;color:var(--ice);
+           border:1px solid var(--line);padding:2px 7px;justify-self:start;white-space:nowrap}
+  .keys dd{margin:0;color:var(--mid);align-self:center}
 
-/* ------------------------------------------------------------------ *
-   section heads
- * ------------------------------------------------------------------ */
-.sec{display:flex;align-items:center;gap:18px;margin:64px 0 24px}
-.sec h2{font-size:var(--d2);line-height:1;letter-spacing:-.02em;white-space:nowrap}
-.sec .rule{flex:1;border-top:1px solid var(--ink)}
+  /* ---------- live game stage ---------- */
+  .stage{
+    position:relative;margin-top:26px;aspect-ratio:16/9;overflow:hidden;
+    border:1px solid rgba(255,255,255,.16);background:#000;
+    box-shadow:0 0 0 1px rgba(255,255,255,.05),
+               0 0 30px rgba(255,255,255,.05),
+               0 0 90px rgba(255,255,255,.03);
+    transition:box-shadow .5s ease,border-color .4s ease;
+  }
+  .proj:hover .stage{
+    box-shadow:0 0 0 1px rgba(255,255,255,.08),
+               0 0 40px rgba(255,255,255,.075),
+               0 0 120px rgba(255,255,255,.045);
+  }
+  .stage.on{
+    border-color:rgba(255,255,255,.3);
+    box-shadow:0 0 0 1px rgba(255,255,255,.12),
+               0 0 48px rgba(255,255,255,.1),
+               0 0 140px rgba(255,255,255,.055);
+  }
+  .stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;display:block}
+  .stage .cover{
+    position:absolute;inset:0;z-index:2;display:grid;place-items:center;gap:14px;
+    align-content:center;background:rgba(0,0,0,.66);border:0;width:100%;
+    color:var(--ice);cursor:pointer;font-family:var(--mono);font-size:11px;
+    letter-spacing:.34em;text-transform:uppercase;transition:background .3s ease;
+  }
+  .stage .cover:hover{background:rgba(0,0,0,.48)}
+  .stage .cover .tri{width:0;height:0;border-left:22px solid var(--ice);
+    border-top:14px solid transparent;border-bottom:14px solid transparent}
+  .stage.on .cover{display:none}
+  .stage-bar{display:flex;flex-wrap:wrap;gap:10px 18px;justify-content:space-between;
+    align-items:center;margin-top:10px;font-family:var(--mono);font-size:10px;
+    letter-spacing:.2em;text-transform:uppercase;color:var(--dim)}
+  .release{background:none;border:1px solid var(--line);color:var(--mid);font:inherit;
+    letter-spacing:.2em;padding:7px 13px;cursor:pointer;display:none;
+    transition:border-color .2s,color .2s}
+  .release:hover{border-color:var(--line-hot);color:var(--ice)}
+  .stage.on ~ .stage-bar .release{display:inline-block}
 
-/* ------------------------------------------------------------------ *
-   units
- * ------------------------------------------------------------------ */
-.unit{margin-bottom:26px}
-.unit .panel{transition:background-color .12s linear}
-.unit[data-selected="true"] .panel{background:var(--player-blue);padding:2px}
-.unit .tag{font-family:var(--mono)}
-.unit[data-selected="true"] .tag{background:var(--player-blue);color:var(--stone);padding:2px 8px;margin:-2px -8px}
-.unit .panel-head:hover{background:var(--hover)}
+  /* ---------- scaled site preview ---------- */
+  .shot{position:relative;overflow:hidden;aspect-ratio:16/10;background:#000;
+        border:1px solid var(--line);
+        box-shadow:0 0 26px rgba(255,255,255,.035);
+        transition:box-shadow .4s ease,border-color .3s ease}
+  .proj:hover .shot{border-color:rgba(255,255,255,.25);
+        box-shadow:0 0 40px rgba(255,255,255,.06)}
+  .shot iframe{position:absolute;top:0;left:0;width:1280px;height:800px;border:0;
+        transform-origin:top left;pointer-events:none;
+        will-change:transform}
+  .shot .open{position:absolute;inset:0;z-index:2;display:block;text-indent:-9999px;
+        overflow:hidden;background:rgba(0,0,0,.08);transition:background .35s ease}
+  .shot .open:hover,.shot .open:focus-visible{background:rgba(0,0,0,0)}
 
-.unit h3{font-size:var(--d3);line-height:1.05;letter-spacing:-.02em}
-.concept{
-  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
-  margin-top:8px;
-}
-.desc{margin-top:10px;max-width:60ch}
+  .go{margin-top:20px;display:inline-flex;align-items:center;gap:10px;
+      font-family:var(--mono);font-size:11px;letter-spacing:.26em;
+      text-transform:uppercase;color:var(--ice);text-decoration:none;
+      padding:11px 18px;border:1px solid var(--line);
+      transition:border-color .25s ease,background .25s ease}
+  .go:hover,.go:focus-visible{border-color:var(--line-hot);background:rgba(255,255,255,.05)}
 
-.block-label{
-  display:flex;align-items:center;gap:14px;
-  margin:26px 0 12px;
-  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
-}
-.block-label .rule{flex:1;border-top:1px solid var(--ink)}
-.hard{max-width:68ch}
+  /* ---------- who ---------- */
+  .who{padding:clamp(40px,8vh,100px) 0;border-top:1px solid var(--line)}
+  .who-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:clamp(24px,5vw,60px)}
+  .who h2{font-weight:800;font-size:clamp(26px,4.4vw,44px);letter-spacing:-.025em;margin:0 0 18px}
+  .who p{margin:0 0 14px;font-size:15px;line-height:1.75;color:var(--mid);max-width:46ch}
+  .who p b{color:var(--ice);font-weight:600}
+  .reach{list-style:none;margin:0;padding:0}
+  .reach li{margin-bottom:16px}
+  .reach a{font-family:var(--mono);font-size:14px;color:var(--ice);text-decoration:none;
+    border-bottom:1px solid var(--line);padding-bottom:3px;transition:border-color .2s ease}
+  .reach a:hover{border-color:var(--line-hot)}
+  .reach .lbl{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.3em;
+    text-transform:uppercase;color:var(--dim);margin-bottom:6px}
 
-.stats{display:flex;flex-wrap:wrap;gap:14px 0;font-family:var(--mono);font-variant-numeric:tabular-nums}
-.hard + .stats{margin-top:24px}
-/* every cell keeps its rule so a wrapped row reads the same as the first */
-.stats .stat{padding:0 16px;border-left:1px solid var(--ink)}
-.stats .k{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
-.stats .v{display:block;font-size:15px;line-height:1.4}
+  #site footer{border-top:1px solid var(--line);padding:22px 0 46px;
+    font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;
+    color:rgba(255,255,255,.4);display:flex;flex-wrap:wrap;gap:8px 26px;
+    justify-content:space-between}
 
-.keys{display:grid;grid-template-columns:max-content 1fr;gap:8px 20px;align-items:baseline}
-.keys dt{font-family:var(--mono);font-size:12px;letter-spacing:.04em;color:var(--player-blue)}
-.keys dd{font-size:14px;line-height:1.4}
+  :focus-visible{outline:1px solid rgba(255,255,255,.85);outline-offset:4px}
 
-.unit-links{display:flex;flex-wrap:wrap;gap:10px 28px;margin-top:26px;font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
-.unit-links .muted{border-bottom:1px solid var(--ink);padding-bottom:2px}
-
-/* split layout — only the Porsche unit */
-.split{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,6fr);gap:var(--gutter)}
-/* no min-height: with aspect-ratio set, a minimum height would drive the
-   width back up and push the panel sideways on narrow screens */
-.viewport{position:relative;overflow:hidden;background:var(--ink);align-self:start;aspect-ratio:1280/800}
-.viewport .load{
-  position:absolute;inset:0;
-  display:flex;align-items:center;justify-content:center;
-  background:var(--veil);color:var(--stone);
-  font-family:var(--mono);font-size:12px;letter-spacing:.14em;text-transform:uppercase;
-  border:0;cursor:pointer;width:100%;
-}
-.viewport .load:hover{color:var(--player-blue)}
-.viewport .load[hidden]{display:none}
-
-/* ------------------------------------------------------------------ *
-   scaled preview
-   The framed page renders at a fixed logical 1280x800 — a real desktop
-   viewport — and the whole thing is shrunk to fit whatever cell it sits
-   in with transform: scale(k), k = cell width / 1280, anchored top left.
-   The container clips the overflow and carries the same 1280/800 ratio,
-   so the frame lands flush with no crop and no letterbox.
- * ------------------------------------------------------------------ */
-.preview-frame{
-  position:absolute;top:0;left:0;
-  width:1280px;height:800px;
-  max-width:none;          /* the base reset caps media at 100% — that would
-                              silently shrink the logical viewport back down */
-  border:0;
-  transform-origin:top left;
-  /* transform: scale(k) is set from JS */
-}
-.preview-frame.is-static{pointer-events:none}
-
-.preview-overlay{position:absolute;inset:0;z-index:2;display:block;text-decoration:none}
-.preview-overlay:hover{background:var(--marquee-fill)}
-.preview-overlay:focus-visible{outline:none;box-shadow:inset 0 0 0 2px var(--player-blue)}
-.preview-tag{
-  position:absolute;right:0;bottom:0;
-  padding:7px 12px;
-  background:var(--stone);color:var(--ink);
-  font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;
-  clip-path:polygon(12px 0, 100% 0, 100% 100%, 0 100%, 0 12px);
-}
-.preview-overlay:hover .preview-tag{background:var(--player-blue);color:var(--stone)}
-
-/* ------------------------------------------------------------------ *
-   who / talk
- * ------------------------------------------------------------------ */
-.who p{max-width:64ch}
-.talk{display:flex;flex-wrap:wrap;gap:20px 56px;align-items:baseline}
-.talk a.big{
-  font-family:var(--display);font-weight:800;font-stretch:125%;text-transform:uppercase;
-  font-size:clamp(20px,2.6vw,34px);line-height:1.1;letter-spacing:-.02em;
-  text-decoration:none;border-bottom:2px solid var(--ink);
-  word-break:break-word;
-}
-.talk a.big:hover{border-bottom-color:var(--player-blue)}
-.talk .channel{font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;width:100%}
-
-.foot{
-  margin:64px 0 40px;padding-top:16px;border-top:1px solid var(--ink);
-  font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
-}
-
-/* ------------------------------------------------------------------ *
-   marquee + hud
- * ------------------------------------------------------------------ */
-#marquee{
-  position:absolute;z-index:50;display:none;
-  border:1px solid var(--player-blue);
-  background:var(--marquee-fill);
-  pointer-events:none;
-}
-body.dragging{user-select:none;-webkit-user-select:none}
-
-#hud{
-  position:fixed;left:0;right:0;bottom:0;z-index:40;
-  height:var(--hud-h);
-  display:flex;align-items:center;justify-content:space-between;gap:16px;
-  padding:0 var(--gutter);
-  background:var(--stone);
-  border-top:1px solid var(--ink);
-  font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
-  font-variant-numeric:tabular-nums;
-  white-space:nowrap;
-}
-#hud[hidden]{display:none}
-#hud .left{display:flex;align-items:center;gap:10px;overflow:hidden;text-overflow:ellipsis}
-#hud-text{white-space:pre}
-#hud .mark{width:9px;height:9px;border:1px solid var(--ink);flex:none}
-#hud .mark.on{background:var(--player-blue);border-color:var(--player-blue)}
-#hud .note{overflow:hidden;text-overflow:ellipsis}
-#hud .note .long{display:inline}
-#hud .note .short{display:none}
-
-/* ------------------------------------------------------------------ *
-   responsive
- * ------------------------------------------------------------------ */
-@media (max-width:1080px){
-  #hud .note .long{display:none}
-  #hud .note .short{display:inline}
-}
-@media (max-width:900px){
-  /* minmax(0,…) — a bare 1fr keeps an auto minimum and lets a wide child
-     push the column past the panel */
-  .split{grid-template-columns:minmax(0,1fr)}
-  .viewport{aspect-ratio:16/10}
-}
-@media (max-width:720px){
-  body{font-size:16px}
-  /* the overlay stops overlaying here, so the panel must stop being dark
-     under it — otherwise the headline is ink on ink */
-  .hero-view{height:auto;min-height:0;background:none}
-  .hero-shot{height:auto;aspect-ratio:16/9}
-  .hero-overlay{position:static;background:none;color:var(--ink);padding:20px 0 0}
-  .hero-overlay h1{font-size:40px}
-  .select-toggle{display:none}
-  .topbar .where{display:none}
-  .sec{margin:44px 0 20px}
-  .stats .stat{padding:0 12px}
-  .keys{grid-template-columns:1fr;gap:2px 0}
-  .keys dd{margin-bottom:8px}
-  #hud{display:none}
-  body.has-hud{padding-bottom:0}
-}
-@media (max-width:380px){
-  :root{--gutter:14px;--d3:22px}
-  .stats .stat{padding:0;border-left:0;width:50%}
-}
-
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{transition:none!important;animation:none!important}
-}
-
-/* hotkeys collapse on small screens only */
-.keys-wrap > summary{
-  display:none;
-  list-style:none;
-  font-family:var(--mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;
-  cursor:pointer;padding:6px 0;
-}
-.keys-wrap > summary::-webkit-details-marker{display:none}
-@media (max-width:720px){
-  .keys-wrap > summary{display:list-item}
-  .keys-wrap > .block-label{display:none}
-  .keys-wrap:not([open]) .keys{display:none}
-}
+  @media (max-width:860px){
+    .split{grid-template-columns:1fr}
+    .proj.flip .split{direction:ltr}
+  }
+  @media (max-width:700px){
+    /* backdrop blur is the single most expensive thing on a phone */
+    .proj{backdrop-filter:none;-webkit-backdrop-filter:none;background:rgba(0,0,0,.74)}
+  }
+  @media (max-width:640px){
+    #mark{font-size:11px;top:18px}
+    #cue{bottom:22px}
+    .keys dl{grid-template-columns:1fr;gap:3px 0}
+    .keys dd{margin-bottom:9px}
+  }
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    [data-rv],[data-rv="mask"],[data-rv="line"]{
+      opacity:1;transform:none;clip-path:none;transition:none
+    }
+    .hard::before{transform:none;transition:none}
+    #cue .bar{animation:none}
+  }
 </style>
 </head>
-
 <body>
 
-<header class="topbar">
-  <span>Iskander Yusupov &middot; <span data-i18n="ui.role">Frontend</span></span>
-  <span class="where" data-i18n="ui.country">Uzbekistan</span>
-  <div class="lang" role="group" aria-label="Language">
-    <button type="button" id="lang-en" aria-pressed="true">EN</button>
-    <span class="sep" aria-hidden="true">/</span>
-    <button type="button" id="lang-ru" aria-pressed="false">RU</button>
-  </div>
-</header>
+<canvas id="bg"></canvas>
+<canvas id="fx"></canvas>
 
-<main class="wrap">
+<div class="ui">
+  <div class="corner tl"></div><div class="corner tr"></div>
+  <div class="corner bl"></div><div class="corner br"></div>
+</div>
 
-  <!-- ============================== HERO ============================== -->
-  <section class="hero">
-    <div class="panel">
-      <div class="panel-in">
-        <div class="panel-head">
-          <span class="live"><span class="dot" aria-hidden="true"></span><span data-i18n="ui.live">Live</span></span>
-          <span id="hero-state">The Ancient Empires</span>
-          <button type="button" class="tag-btn" id="release" data-i18n="ui.release" hidden>Release control</button>
+<div id="flash"></div>
+<div id="vignette"></div>
+<div id="grain"></div>
+<button id="replay">Replay</button>
+
+<div id="mark">LEGION CODES</div>
+<div id="cue"><span class="bar"></span>Scroll</div>
+
+<div id="site">
+  <div id="hero-space"></div>
+
+  <div class="shell">
+    <section class="lead">
+      <p class="tag" data-rv>Iskander Yusupov &middot; Uzbekistan &middot; frontend</p>
+      <h2 data-rv="mask" style="--i:1">Things that run in a browser.</h2>
+      <p data-rv style="--i:2">Games, bots and interfaces &mdash; usually shipping as one file with nothing to install and nothing to build. The game below runs on this page. The rest is one click away.</p>
+    </section>
+
+    <div class="rule" data-rv="line"></div>
+
+    <section class="work" aria-label="Selected work">
+      <article class="proj" id="p-rts">
+        <p class="kind" data-rv>Browser game &middot; single file &middot; no dependencies</p>
+        <h3 data-rv="mask">The Ancient Empires</h3>
+        <p class="what" data-rv style="--i:1">A real-time strategy game in the spirit of Age of Empires 1 &mdash; three civilisations, two ages, five resources, procedurally generated maps and up to three bot opponents at three difficulty levels. It opens from one file and starts playing.</p>
+        <p class="hard" data-rv style="--i:2">The hard part was never the drawing. Grid pathfinding makes units walk in staircases, so after <b>A*</b> returns a route I walk it backwards and delete every waypoint already visible from the one before it &mdash; what survives is a straight line wherever a straight line was possible. On top of that each enemy unit runs its own <b>finite state machine</b>, and the whole thing has to stay inside one file with nothing to install.</p>
+
+        <div class="keys">
+          <p data-rv>Controls</p>
+          <dl>
+            <dt data-rv style="--i:0">Drag</dt><dd data-rv style="--i:0">box-select units</dd>
+            <dt data-rv style="--i:1">Ctrl + 1&ndash;9</dt><dd data-rv style="--i:1">assign and recall control groups</dd>
+            <dt data-rv style="--i:2">Shift + RMB</dt><dd data-rv style="--i:2">queue waypoints</dd>
+            <dt data-rv style="--i:3">Shift + LMB</dt><dd data-rv style="--i:3">place several buildings in a row</dd>
+            <dt data-rv style="--i:4">Double click</dt><dd data-rv style="--i:4">select every unit of that type on screen</dd>
+            <dt data-rv style="--i:5">Arrows</dt><dd data-rv style="--i:5">pan the camera</dd>
+          </dl>
         </div>
 
-        <div class="hero-view" id="hero-view">
-          <img class="hero-shot" src="hero-game.jpg" width="1919" height="1079"
-               alt="The Ancient Empires: a browser real-time strategy game, mid-match, with its resource bar and unit panel visible.">
-          <div class="hero-overlay" id="hero-overlay">
-            <h1>Iskander<br>Yusupov</h1>
-            <p class="lead" data-i18n="hero.lead">I build things that run in a browser. All three below are live — click them.</p>
-            <div class="hero-cta">
-              <button type="button" class="btn" id="play" data-i18n="ui.play" hidden>Play it</button>
-              <a class="btn" id="open-game" data-i18n="ui.opengame" href="https://ancient-empires-blond.vercel.app/" target="_blank" rel="noopener">Open game &#8599;</a>
-            </div>
-          </div>
+        <ul class="stats">
+              <li data-rv style="--i:0"><span>Lines of code</span><span>10,605</span></li>
+              <li data-rv style="--i:1"><span>Weight, unminified</span><span>590 KB</span></li>
+              <li data-rv style="--i:2"><span>Third-party dependencies</span><span>0</span></li>
+              <li data-rv style="--i:3"><span>Civilisations</span><span>Egypt &middot; Greece &middot; Babylon</span></li>
+              <li data-rv style="--i:4"><span>Also in</span><span>day-night cycle, EN / RU, post-match graphs</span></li>
+        </ul>
+
+        <div class="stage" id="stage" data-rv="fade">
+          <iframe id="game" title="The Ancient Empires, playable"
+                  data-src="https://ancient-empires-blond.vercel.app/"
+                  allow="fullscreen" inert></iframe>
+          <button class="cover" id="play" type="button">
+            <span class="tri" aria-hidden="true"></span>
+            Play it here
+          </button>
         </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ============================== WORK ============================== -->
-  <div class="sec"><h2>Work</h2><span class="rule"></span></div>
-
-  <!-- unit — The Ancient Empires -->
-  <article class="unit" id="unit-game" data-loc="10605" data-kb="223" data-stack="JS">
-    <div class="panel">
-      <div class="panel-in">
-        <div class="panel-head">
-          <span class="tag">[ unit ]</span>
-          <span data-i18n="kind.rts">Browser RTS</span>
+        <div class="stage-bar">
+          <span id="stage-note">Runs on this page &mdash; nothing to install</span>
+          <button class="release" id="release" type="button">Release keyboard</button>
         </div>
-        <div class="panel-body">
-          <h3>The Ancient Empires</h3>
-          <p class="desc" data-i18n="game.desc">Age of Empires 1, the whole thing in one browser tab.</p>
+      </article>
 
-          <div class="block-label"><span data-i18n="lbl.hard">Hardest part</span><span class="rule"></span></div>
-          <p class="hard" data-i18n="game.hard">Pathfinding is A* on a grid with a smoothing pass on top, so units cut corners instead of walking the staircase a grid gives you. Enemy AI is a state machine per unit — gather, build, attack, fall back — and the maps are generated procedurally, which means the generator has to place resources somewhere that isn't unfair to one side.</p>
-
-          <div class="block-label"><span data-i18n="lbl.build">Build</span><span class="rule"></span></div>
-          <div class="stats">
-            <span class="stat"><span class="k" data-i18n="st.source">Source</span><span class="v" data-i18n="v.onefile">1 HTML file</span></span>
-            <span class="stat"><span class="k" data-i18n="st.lines">Lines</span><span class="v">10,605</span></span>
-            <span class="stat"><span class="k" data-i18n="st.unmin">Unminified</span><span class="v">590 KB</span></span>
-            <span class="stat"><span class="k" data-i18n="st.transfer">Transferred</span><span class="v">208 KB</span></span>
-            <span class="stat"><span class="k" data-i18n="st.requests">Requests</span><span class="v">14</span></span>
-            <span class="stat"><span class="k" data-i18n="st.deps">JS deps</span><span class="v">0</span></span>
-            <span class="stat"><span class="k" data-i18n="st.civs">Civs</span><span class="v">3</span></span>
-            <span class="stat"><span class="k" data-i18n="st.ages">Ages</span><span class="v">2</span></span>
-            <span class="stat"><span class="k" data-i18n="st.res">Resources</span><span class="v">5</span></span>
-            <span class="stat"><span class="k" data-i18n="st.locales">Locales</span><span class="v">EN / RU</span></span>
-          </div>
-
-          <details class="keys-wrap" open>
-            <summary data-i18n="lbl.controls">Controls</summary>
-            <div class="block-label"><span data-i18n="lbl.controls2">Controls</span><span class="rule"></span></div>
-            <dl class="keys">
-              <dt>Ctrl + 1&ndash;9</dt><dd data-i18n="key.groups">control groups</dd>
-              <dt>Shift + RMB</dt><dd data-i18n="key.waypoint">waypoint queue</dd>
-              <dt>Shift + LMB</dt><dd data-i18n="key.build">multi-build</dd>
-              <dt data-i18n="key.dbl">Double click</dt><dd data-i18n="key.type">select every unit of that type on screen</dd>
-            </dl>
-          </details>
-
-          <p class="unit-links">
-            <span class="muted" data-i18n="link.above">Running at the top of this page</span>
-            <a href="https://ancient-empires-blond.vercel.app/" data-i18n="ui.fullscreen" target="_blank" rel="noopener">Open fullscreen &#8599;</a>
-          </p>
-        </div>
-      </div>
-    </div>
-  </article>
-
-  <!-- unit — Porsche 911 Turbo S -->
-  <article class="unit" id="unit-porsche" data-loc="646" data-kb="372" data-stack="CSS">
-    <div class="panel">
-      <div class="panel-in">
-        <div class="panel-head">
-          <span class="tag">[ unit ]</span>
-          <span data-i18n="kind.landing">Landing page</span>
-        </div>
-        <div class="panel-body split">
-          <div class="viewport" id="porsche-view">
-            <button type="button" class="load" id="porsche-load" data-i18n="ui.load">Load preview</button>
-          </div>
-
+      <article class="proj">
+        <div class="split">
           <div>
-            <h3>Porsche 911 Turbo S</h3>
-            <p class="concept" data-i18n="ui.concept">Concept &mdash; not client work</p>
-            <p class="desc" data-i18n="porsche.desc">A landing page built out of typography and two large photographs.</p>
-
-            <div class="block-label"><span data-i18n="lbl.hard2">Hardest part</span><span class="rule"></span></div>
-            <p class="hard" data-i18n="porsche.hard">The page is type and two photographs, so the photographs are the entire budget. They go through an image CDN with format negotiation, which hands a modern browser AVIF instead of JPEG: the hero comes down at 207 KB for a 1600px frame, the second one at 111 KB for 1800px. The hero is eager with a high fetch priority, the second is lazy, and the document itself is 7 KB over the wire.</p>
-
-            <div class="stats">
-              <span class="stat"><span class="k" data-i18n="st.lines2">Lines</span><span class="v">646</span></span>
-              <span class="stat"><span class="k" data-i18n="st.doc">Document</span><span class="v">23 KB</span></span>
-              <span class="stat"><span class="k" data-i18n="st.transfer2">Transferred</span><span class="v">7 KB</span></span>
-              <span class="stat"><span class="k" data-i18n="st.requests2">Requests</span><span class="v">5</span></span>
-              <span class="stat"><span class="k" data-i18n="st.img">Images</span><span class="v">2 / 318 KB</span></span>
-              <span class="stat"><span class="k" data-i18n="st.fonts">Fonts</span><span class="v" data-i18n="v.fonts">1 file / 47 KB</span></span>
-            </div>
-
-            <p class="unit-links">
-              <a href="https://porsche-911-opal.vercel.app/" data-i18n="ui.openlive" target="_blank" rel="noopener">Open live &#8599;</a>
-            </p>
+            <p class="kind" data-rv>Client demo &middot; Waco, Texas</p>
+            <h3 data-rv="mask">Oh La Vache Salon</h3>
+            <p class="what" data-rv style="--i:1">A booking page built for a working American salon on their own services, prices and stylists. Not a mockup &mdash; the whole flow runs, right down to the confirmation.</p>
+            <p class="hard" data-rv style="--i:2">Every salon site in the world opens with a service list. Their reviews are all about <b>people</b> &mdash; clients follow one stylist for years &mdash; so this page opens with the seven faces instead, and the booking panel scopes itself to whoever you picked. Slots are generated from the salon's real opening hours.</p>
+            <ul class="stats">
+              <li data-rv style="--i:0"><span>Booking flow</span><span>4 steps</span></li>
+              <li data-rv style="--i:1"><span>Stylists</span><span>7</span></li>
+              <li data-rv style="--i:2"><span>Services priced</span><span>39</span></li>
+              <li data-rv style="--i:3"><span>Files</span><span>1</span></li>
+            </ul>
+            <a class="go" data-rv style="--i:3" href="https://olv-salon-demo.vercel.app/" target="_blank" rel="noopener">Open it <span aria-hidden="true">&#8599;</span></a>
+          </div>
+          <div class="shot" data-rv="fade">
+            <iframe data-src="https://olv-salon-demo.vercel.app/" title="Oh La Vache Salon, live preview" tabindex="-1" aria-hidden="true" scrolling="no"></iframe>
+            <a class="open" href="https://olv-salon-demo.vercel.app/" target="_blank" rel="noopener">Open Oh La Vache Salon in a new tab</a>
           </div>
         </div>
-      </div>
-    </div>
-  </article>
+      </article>
 
-  <!-- unit — Telegram bot -->
-  <article class="unit" id="unit-bot" data-loc="1014" data-stack="PY">
-    <div class="panel">
-      <div class="panel-in">
-        <div class="panel-head">
-          <span class="tag">[ unit ]</span>
-          <span data-i18n="kind.bot">Telegram bot</span>
-        </div>
-        <div class="panel-body">
-          <h3>@Tiktokdownload899bot</h3>
-          <p class="desc" data-i18n="bot.desc">Pulls videos without watermarks out of TikTok, YouTube and Instagram.</p>
-
-          <div class="block-label"><span data-i18n="lbl.hard3">Hardest part</span><span class="rule"></span></div>
-          <p class="hard" data-i18n="bot.hard">TikTok's CDN is blocked by my ISP, so the download path can't go out directly. Traffic runs through a local SOCKS5 proxy: yt-dlp gets its own route, while the Telegram API calls keep going out over the normal one. Keeping both paths alive in a single process, without one of them quietly timing out, took longer than the downloading did.</p>
-
-          <div class="stats">
-            <span class="stat"><span class="k" data-i18n="st.lines3">Lines</span><span class="v">1,014</span></span>
-            <span class="stat"><span class="k" data-i18n="st.lang">Language</span><span class="v">Python</span></span>
-            <span class="stat"><span class="k" data-i18n="st.lib">Library</span><span class="v">python-telegram-bot</span></span>
-            <span class="stat"><span class="k" data-i18n="st.extractor">Extractor</span><span class="v">yt-dlp</span></span>
-            <span class="stat"><span class="k" data-i18n="st.runsin">Runs in</span><span class="v" data-i18n="v.groups">Groups + DM</span></span>
+      <article class="proj flip">
+        <div class="split">
+          <div>
+            <p class="kind" data-rv>Editorial page &middot; scroll-driven</p>
+            <h3 data-rv="mask">Pagani Huayra Roadster</h3>
+            <p class="what" data-rv style="--i:1">A long-form page about a roadster that came out lighter than the coupe it was cut from &mdash; 1,280&nbsp;kg dry, 764&nbsp;hp, a Carbo-Titanium monocoque.</p>
+            <p class="hard" data-rv style="--i:2">Three sections are <b>horizontal</b> while the page itself only ever scrolls down. Each one is a tall track with a sticky viewport pinned inside it; vertical progress through the track is measured and fed straight into a horizontal transform, so the reader keeps doing the one gesture they already know.</p>
+            <ul class="stats">
+              <li data-rv style="--i:0"><span>Built with</span><span>React &middot; no bundler</span></li>
+              <li data-rv style="--i:1"><span>Pinned tracks</span><span>3</span></li>
+              <li data-rv style="--i:2"><span>Spec rows</span><span>18</span></li>
+              <li data-rv style="--i:3"><span>Photography</span><span>Wikimedia Commons, CC BY-SA</span></li>
+            </ul>
+            <a class="go" data-rv style="--i:3" href="https://pagani-huayra-sand.vercel.app/" target="_blank" rel="noopener">Open it <span aria-hidden="true">&#8599;</span></a>
           </div>
+          <div class="shot" data-rv="fade">
+            <iframe data-src="https://pagani-huayra-sand.vercel.app/" title="Pagani Huayra Roadster, live preview" tabindex="-1" aria-hidden="true" scrolling="no"></iframe>
+            <a class="open" href="https://pagani-huayra-sand.vercel.app/" target="_blank" rel="noopener">Open Pagani Huayra Roadster in a new tab</a>
+          </div>
+        </div>
+      </article>
 
-          <p class="unit-links">
-            <a href="https://t.me/Tiktokdownload899bot" data-i18n="ui.opentg" target="_blank" rel="noopener">Open in Telegram &#8599;</a>
-          </p>
+      <article class="proj">
+        <div class="split">
+          <div>
+            <p class="kind" data-rv>Landing page &middot; concept</p>
+            <h3 data-rv="mask">Porsche 911 Turbo S</h3>
+            <p class="what" data-rv style="--i:1">A typography-led page for a car that doesn't need help selling itself &mdash; built to find out how far layout and type alone could carry a product page.</p>
+            <p class="hard" data-rv style="--i:2">Images are the entire page here, so one missing file is fatal. Every photo tries a local copy, then a CDN copy, then falls back to a <b>painted panel</b> in the same palette. The hero never shows a hole, whatever the network is doing that day.</p>
+            <ul class="stats">
+              <li data-rv style="--i:0"><span>Type</span><span>Bebas Neue / Jost</span></li>
+              <li data-rv style="--i:1"><span>Sections</span><span>5</span></li>
+              <li data-rv style="--i:2"><span>Layout shift</span><span>none</span></li>
+              <li data-rv style="--i:3"><span>Files</span><span>1</span></li>
+            </ul>
+            <a class="go" data-rv style="--i:3" href="https://porsche-911-opal.vercel.app/" target="_blank" rel="noopener">Open it <span aria-hidden="true">&#8599;</span></a>
+          </div>
+          <div class="shot" data-rv="fade">
+            <iframe data-src="https://porsche-911-opal.vercel.app/" title="Porsche 911 Turbo S, live preview" tabindex="-1" aria-hidden="true" scrolling="no"></iframe>
+            <a class="open" href="https://porsche-911-opal.vercel.app/" target="_blank" rel="noopener">Open Porsche 911 Turbo S in a new tab</a>
+          </div>
+        </div>
+      </article>
+
+      <article class="proj">
+        <p class="kind" data-rv>Telegram bot &middot; Python</p>
+        <h3 data-rv="mask">Media downloader bot</h3>
+        <p class="what" data-rv style="--i:1">Send it a link, get the video back without a watermark &mdash; TikTok, YouTube and Instagram, in private chats and inside groups. It has live users.</p>
+        <p class="hard" data-rv style="--i:2">The TikTok CDN is blocked by my ISP, so the bot simply cannot reach it from here. Requests bound for that CDN leave through a local <b>SOCKS5 proxy</b> while everything else takes the direct route &mdash; two network paths inside one process, chosen per request.</p>
+        <ul class="stats">
+              <li data-rv style="--i:0"><span>Lines of code</span><span>1,014</span></li>
+              <li data-rv style="--i:1"><span>Stack</span><span>python-telegram-bot &middot; yt-dlp</span></li>
+              <li data-rv style="--i:2"><span>Sources</span><span>TikTok &middot; YouTube &middot; Instagram</span></li>
+              <li data-rv style="--i:3"><span>Works in</span><span>groups and direct messages</span></li>
+        </ul>
+        <a class="go" data-rv style="--i:3" href="https://t.me/Tiktokdownload899bot" target="_blank" rel="noopener">Try it <span aria-hidden="true">&#8599;</span></a>
+      </article>
+    </section>
+
+    <section class="who">
+      <div class="who-grid">
+        <div>
+          <h2 data-rv="mask">Who</h2>
+          <p data-rv style="--i:1">I'm a frontend developer in Uzbekistan. I like the problems where the interesting part isn't the framework &mdash; pathfinding, state machines, interfaces that have to hold together without a build step.</p>
+          <p data-rv style="--i:2">I work with clients abroad directly: <b>registered self-employed</b>, invoice to a bank account, terms agreed before the first line of code.</p>
+        </div>
+        <div>
+          <ul class="reach">
+            <li data-rv style="--i:1"><span class="lbl">Telegram</span><a href="https://t.me/legion899" target="_blank" rel="noopener">@legion899</a></li>
+            <li data-rv style="--i:2"><span class="lbl">Email</span><a href="mailto:yusupoviskander899@gmail.com">yusupoviskander899@gmail.com</a></li>
+          </ul>
         </div>
       </div>
-    </div>
-  </article>
+    </section>
 
-  <!-- ============================== WHO ============================== -->
-  <div class="sec"><h2>Who</h2><span class="rule"></span></div>
-  <section class="who">
-    <p data-i18n="who.body">I'm Iskander Yusupov. I write frontend for the things that are awkward to build with a framework: real-time games, interfaces that don't follow the usual patterns, tools that have to ship as a single file and keep working. I'm in Uzbekistan and I work with clients abroad. I'm registered as self-employed, I work under a contract, and I take payment by bank transfer.</p>
-  </section>
-
-  <!-- ============================== TALK ============================== -->
-  <div class="sec"><h2>Talk</h2><span class="rule"></span></div>
-  <section class="talk">
-    <a class="big" href="https://t.me/legion899" target="_blank" rel="noopener">@legion899</a>
-    <a class="big" href="mailto:yusupoviskander899@gmail.com">yusupoviskander899@gmail.com</a>
-    <span class="channel"><span data-i18n="ui.channel">Channel:</span> <a href="https://t.me/rylevant" target="_blank" rel="noopener">@rylevant</a></span>
-  </section>
-
-  <p class="foot">Iskander Yusupov &mdash; 2026</p>
-</main>
-
-<div id="marquee" aria-hidden="true"></div>
-
-<div id="hud" role="status" aria-live="polite" hidden>
-  <span class="left">
-    <span class="mark" id="hud-mark" aria-hidden="true"></span>
-    <span id="hud-text">No selection &mdash; drag to select</span>
-  </span>
-  <span class="note">
-    <span class="long" data-i18n="hud.note">Same box-select I wrote for the RTS above</span>
-    <span class="short" data-i18n="hud.note2">Same code as the RTS above</span>
-  </span>
+    <footer>
+      <span>LEGION CODES</span>
+      <span>Built without a framework, as usual</span>
+    </footer>
+  </div>
 </div>
 
 <script>
-(function () {
-  'use strict';
-  var root = document.documentElement;
-  root.classList.add('js');
+(() => {
+'use strict';
 
-  var GAME_URL = 'https://ancient-empires-blond.vercel.app/';
-  var PORSCHE_URL = 'https://porsche-911-opal.vercel.app/';
+/* ============================================================
+   LEGION CODES — intro
 
-  /* ---------------------------------------------------------------- *
-     Site address, one constant.
-     Served over http(s) it takes the real origin, so a Vercel preview
-     deployment describes itself correctly with nothing to edit. Opened
-     from disk there is no origin to read, and it falls back to the
-     literal — the same string the four meta tags in <head> carry.
-     Those tags still need their literal: crawlers do not run this file.
-   * ---------------------------------------------------------------- */
-  var SITE_URL = /^https?:$/.test(location.protocol)
-    ? location.origin + '/'
-    : 'https://your-domain.vercel.app/';
+   act 1  a black hole spins up; star matter spirals in and
+          tangles into a knot of light
+   act 2  the knot resolves into a question mark
+   act 3  the hole wakes up, swallows it, detonates
+   act 4  the debris slowly settles into the logo, which then
+          stays alive (drifting, breathing, twinkling)
+   ============================================================ */
 
-  /* path of the share image, relative to the site root — must match the
-     src on .hero-shot and the two literal image tags in <head> */
-  var HERO_IMG = 'src/img/hero-game.jpg';
+const bg   = document.getElementById('bg');
+const bgx  = bg.getContext('2d');
+const fx   = document.getElementById('fx');
+const ctx  = fx.getContext('2d');
 
-  [['link[rel="canonical"]', 'href', SITE_URL],
-   ['meta[property="og:url"]', 'content', SITE_URL],
-   ['meta[property="og:image"]', 'content', SITE_URL + HERO_IMG],
-   ['meta[name="twitter:image"]', 'content', SITE_URL + HERO_IMG]
-  ].forEach(function (pair) {
-    var el = document.querySelector(pair[0]);
-    if (el) el.setAttribute(pair[1], pair[2]);
-  });
+const flashEl  = document.getElementById('flash');
+const replayEl = document.getElementById('replay');
+const corners  = document.querySelectorAll('.corner');
 
-  /* ---------------------------------------------------------------- *
-     Language.
-     One exception to the switch: the Archivo headings (WORK / WHO /
-     TALK and the project names) stay English in both modes. Archivo
-     ships no Cyrillic subset, so Russian there would silently drop to
-     a system font at weight 800 and look broken next to everything
-     else. Azeret Mono has the same gap, but its fallback is another
-     monospace at 11–12px uppercase, which holds up — so the HUD, the
-     stat keys and the buttons do switch.
-   * ---------------------------------------------------------------- */
-  var STRINGS = {
-    'ui.role':      { en: 'Frontend', ru: 'Фронтенд' },
-    'ui.country':   { en: 'Uzbekistan', ru: 'Узбекистан' },
-    'ui.live':      { en: 'Live', ru: 'Онлайн' },
-    'ui.play':      { en: 'Play it', ru: 'Играть' },
-    'ui.opengame':  { en: 'Open game ↗', ru: 'Открыть игру ↗' },
-    'ui.release':   { en: 'Release control', ru: 'Вернуть управление' },
-    'ui.playing':   { en: 'Game has keyboard control', ru: 'Клавиатура у игры' },
-    'ui.load':      { en: 'Load preview', ru: 'Загрузить превью' },
-    'ui.fullscreen':{ en: 'Open fullscreen ↗', ru: 'Открыть на весь экран ↗' },
-    'ui.openlive':  { en: 'Open live ↗', ru: 'Открыть вживую ↗' },
-    'ui.opentg':    { en: 'Open in Telegram ↗', ru: 'Открыть в Telegram ↗' },
-    'ui.select':    { en: 'Select', ru: 'Выделить' },
-    'ui.open':      { en: 'Open ↗', ru: 'Открыть ↗' },
-    'ui.openlive_aria': { en: 'Open the Porsche 911 landing page in a new tab', ru: 'Открыть лендинг Porsche 911 в новой вкладке' },
-    'ui.channel':   { en: 'Channel:', ru: 'Канал:' },
-    'ui.concept':   { en: 'Concept — not client work', ru: 'Концепт — не клиентский заказ' },
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const SP = REDUCED ? 0.35 : 1;             // global time scale
 
-    'kind.rts':     { en: 'Browser RTS', ru: 'Браузерная RTS' },
-    'kind.landing': { en: 'Landing page', ru: 'Лендинг' },
-    'kind.bot':     { en: 'Telegram bot', ru: 'Телеграм-бот' },
+/* ---------- timeline (ms) ---------- */
+const TL = {
+  infall  :  800 * SP,   // matter starts falling toward the hole
+  toQ     : 3500 * SP,   // the knot resolves into "?"
+  holdQ   : 4600 * SP,   // "?" is fully formed and alive
+  implode : 5700 * SP,   // the hole wakes up and sucks it in
+  blast   : 6150 * SP,   // detonation
+  toLogo  : 6550 * SP,   // debris starts converging into the logo
+  logoDur : 2100 * SP,
+  logoStag:  700 * SP
+};
+TL.live = TL.toLogo + TL.logoDur + TL.logoStag;
+const ST = { WAIT:0, INFALL:1, TO_Q:2, HOLD_Q:3, IMPLODE:4, BLAST:5, TO_LOGO:6, LIVE:7 };
 
-    'lbl.hard':     { en: 'Hardest part', ru: 'Самое трудное' },
-    'lbl.hard2':    { en: 'Hardest part', ru: 'Самое трудное' },
-    'lbl.hard3':    { en: 'Hardest part', ru: 'Самое трудное' },
-    'lbl.build':    { en: 'Build', ru: 'Сборка' },
-    'lbl.controls': { en: 'Controls', ru: 'Управление' },
-    'lbl.controls2':{ en: 'Controls', ru: 'Управление' },
+const FONT = '900 <S>px "Arial Black","Segoe UI Black",Impact,system-ui,sans-serif';
 
-    'st.source':    { en: 'Source', ru: 'Исходник' },
-    'st.lines':     { en: 'Lines', ru: 'Строк' },
-    'st.lines2':    { en: 'Lines', ru: 'Строк' },
-    'st.lines3':    { en: 'Lines', ru: 'Строк' },
-    'st.unmin':     { en: 'Unminified', ru: 'Исходный вес' },
-    'st.transfer':  { en: 'Transferred', ru: 'На проводе' },
-    'st.transfer2': { en: 'Transferred', ru: 'На проводе' },
-    'st.requests':  { en: 'Requests', ru: 'Запросов' },
-    'st.requests2': { en: 'Requests', ru: 'Запросов' },
-    'st.deps':      { en: 'JS deps', ru: 'JS-зависимостей' },
-    'st.civs':      { en: 'Civs', ru: 'Цивилизаций' },
-    'st.ages':      { en: 'Ages', ru: 'Эпох' },
-    'st.res':       { en: 'Resources', ru: 'Ресурсов' },
-    'st.locales':   { en: 'Locales', ru: 'Языки' },
-    'st.doc':       { en: 'Document', ru: 'Документ' },
-    'st.img':       { en: 'Images', ru: 'Фото' },
-    'st.fonts':     { en: 'Fonts', ru: 'Шрифты' },
-    'st.lang':      { en: 'Language', ru: 'Язык' },
-    'st.lib':       { en: 'Library', ru: 'Библиотека' },
-    'st.extractor': { en: 'Extractor', ru: 'Экстрактор' },
-    'st.runsin':    { en: 'Runs in', ru: 'Работает в' },
+/* icy white / cyan / soft violet / warm gold */
+const PALETTE = [
+  [225,240,255], [225,240,255], [225,240,255],
+  [140,215,255], [140,215,255],
+  [180,165,255],
+  [255,224,180]
+];
 
-    'v.onefile':    { en: '1 HTML file', ru: '1 HTML-файл' },
-    'v.fonts':      { en: '1 file / 47 KB', ru: '1 файл / 47 KB' },
-    'v.groups':     { en: 'Groups + DM', ru: 'Группы и личка' },
-
-    'key.dbl':      { en: 'Double click', ru: 'Двойной клик' },
-
-    'hud.idle':     { en: 'No selection — drag to select', ru: 'Ничего не выделено — тяните рамку' },
-    'hud.selected': { en: 'selected', ru: 'выделено' },
-    'hud.size':     { en: 'Size', ru: 'Вес' },
-    'hud.stack':    { en: 'Stack', ru: 'Стек' },
-    'hud.note':     { en: 'Same box-select I wrote for the RTS above', ru: 'Та же рамка выделения, что я написал для RTS наверху' },
-    'hud.note2':    { en: 'Same code as the RTS above', ru: 'Тот же код, что в RTS наверху' },
-
-    'hero.lead': {
-      en: 'I build things that run in a browser. All three below are live — click them.',
-      ru: 'Я делаю штуки, которые работают в браузере. Все три ниже — живые, их можно потрогать прямо здесь.'
-    },
-    'game.desc': {
-      en: 'Age of Empires 1, the whole thing in one browser tab.',
-      ru: 'Age of Empires 1 целиком в одной вкладке браузера.'
-    },
-    'game.hard': {
-      en: 'Pathfinding is A* on a grid with a smoothing pass on top, so units cut corners instead of walking the staircase a grid gives you. Enemy AI is a state machine per unit — gather, build, attack, fall back — and the maps are generated procedurally, which means the generator has to place resources somewhere that isn’t unfair to one side.',
-      ru: 'Поиск пути — A* по сетке плюс проход сглаживания, чтобы юниты срезали углы, а не шли лесенкой, которую выдаёт сетка. Вражеский ИИ — конечный автомат на каждого юнита: собирать, строить, атаковать, отходить. Карты генерируются процедурно, а значит генератор обязан раскладывать ресурсы так, чтобы ни одной стороне не досталось нечестно.'
-    },
-    'porsche.desc': {
-      en: 'A landing page built out of typography and two large photographs.',
-      ru: 'Лендинг, собранный на типографике и двух крупных фотографиях.'
-    },
-    'porsche.hard': {
-      en: 'The page is type and two photographs, so the photographs are the entire budget. They go through an image CDN with format negotiation, which hands a modern browser AVIF instead of JPEG: the hero comes down at 207 KB for a 1600px frame, the second one at 111 KB for 1800px. The hero is eager with a high fetch priority, the second is lazy, and the document itself is 7 KB over the wire.',
-      ru: 'Страница — это шрифт и две фотографии, поэтому фотографии и есть весь бюджет. Они идут через CDN с согласованием формата: современный браузер получает AVIF вместо JPEG. Первое фото — 207 КБ на ширине 1600 пикселей, второе — 111 КБ на 1800. Первое грузится сразу и с высоким приоритетом, второе — лениво, а сам документ весит 7 КБ на проводе.'
-    },
-    'bot.desc': {
-      en: 'Pulls videos without watermarks out of TikTok, YouTube and Instagram.',
-      ru: 'Достаёт видео без водяных знаков из TikTok, YouTube и Instagram.'
-    },
-    'bot.hard': {
-      en: 'TikTok’s CDN is blocked by my ISP, so the download path can’t go out directly. Traffic runs through a local SOCKS5 proxy: yt-dlp gets its own route, while the Telegram API calls keep going out over the normal one. Keeping both paths alive in a single process, without one of them quietly timing out, took longer than the downloading did.',
-      ru: 'CDN TikTok заблокирован моим провайдером, поэтому напрямую качать нельзя. Трафик идёт через локальный SOCKS5-прокси: у yt-dlp свой маршрут, а вызовы Telegram API продолжают ходить обычным. Держать оба маршрута живыми в одном процессе так, чтобы ни один тихо не отваливался по таймауту, оказалось дольше, чем сама выкачка.'
-    },
-    'key.groups':   { en: 'control groups', ru: 'контрольные группы' },
-    'key.waypoint': { en: 'waypoint queue', ru: 'очередь путевых точек' },
-    'key.build':    { en: 'multi-build', ru: 'мультипостройка' },
-    'key.type':     { en: 'select every unit of that type on screen', ru: 'выделить все юниты этого типа на экране' },
-    'link.above':   { en: 'Running at the top of this page', ru: 'Работает наверху этой страницы' },
-    'who.body': {
-      en: 'I’m Iskander Yusupov. I write frontend for the things that are awkward to build with a framework: real-time games, interfaces that don’t follow the usual patterns, tools that have to ship as a single file and keep working. I’m in Uzbekistan and I work with clients abroad. I’m registered as self-employed, I work under a contract, and I take payment by bank transfer.',
-      ru: 'Меня зовут Искандер Юсупов. Я пишу фронтенд для того, что неудобно собирать фреймворком: игры реального времени, интерфейсы, которые не ложатся в привычные шаблоны, инструменты, которые должны уехать одним файлом и продолжать работать. Живу в Узбекистане, работаю с заказчиками из-за рубежа. Оформлен как самозанятый, работаю по договору, оплата — банковским переводом.'
-    }
+/* ------------------------------------------------------------
+   quality budget. Fill rate is what costs here: every particle
+   is a soft sprite drawn with 'lighter', so the bill scales with
+   DPR squared and with the particle count. Both are picked once,
+   from the device, instead of being hard-coded.
+   ------------------------------------------------------------ */
+const QUAL = (() => {
+  const dpr   = window.devicePixelRatio || 1;
+  const area  = innerWidth * innerHeight;
+  const small = Math.min(innerWidth, innerHeight) < 760;
+  const cores = navigator.hardwareConcurrency || 4;
+  const mem   = navigator.deviceMemory || 4;
+  const weak  = small || cores <= 4 || mem <= 4;
+  return {
+    dpr     : Math.min(dpr, weak ? 1.25 : 1.5),
+    starDiv : weak ? 9000 : 6200,
+    starMax : weak ? 240  : 430,
+    cap     : Math.max(1500, Math.min(weak ? 3000 : 5000, Math.round(area / 430))),
+    settled : false
   };
+})();
 
-  var btnEn = document.getElementById('lang-en');
-  var btnRu = document.getElementById('lang-ru');
-  var lang = 'en';
-  var afterLang = [];
+let PAUSED = false, qN = 0, qSum = 0;
 
-  function t(key) {
-    return (STRINGS[key] && STRINGS[key][lang]) || '';
+let W = 0, H = 0, DPR = 1;
+let stars = [], shooters = [], parts = [], links = [];
+let rings = [], sparks = [], rays = [], core = null, disk = [];
+let logoBox = null, qBox = null, homeBox = null;
+let sprites = [];
+let t0 = performance.now(), now = 0, last = t0;
+let stage = ST.WAIT, shake = 0;
+let glitchUntil = 0, nextGlitch = 6000, bands = [];
+let holeR = 60, holeSpin = 0;
+
+const mouse = { x: 0, y: 0, tx: 0, ty: 0, px: 0, py: 0, on: false };
+
+/* ============================================================
+   helpers
+   ============================================================ */
+const rnd   = (a, b) => a + Math.random() * (b - a);
+const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+const lerp  = (a, b, t) => a + (b - a) * t;
+const easeOutCubic  = t => 1 - Math.pow(1 - t, 3);
+const easeOutQuint  = t => 1 - Math.pow(1 - t, 5);
+const easeInOutCubic= t => t < .5 ? 4*t*t*t : 1 - Math.pow(-2*t + 2, 3) / 2;
+const easeInQuad    = t => t * t;
+
+function makeSprite([r, g, b]) {
+  const s = 64, c = document.createElement('canvas');
+  c.width = c.height = s;
+  const g2 = c.getContext('2d');
+  const grd = g2.createRadialGradient(s / 2, s / 2, 0, s / 2, s / 2, s / 2);
+  grd.addColorStop(0.00, 'rgba(255,255,255,1)');
+  grd.addColorStop(0.09, `rgba(${r},${g},${b},.85)`);
+  grd.addColorStop(0.22, `rgba(${r},${g},${b},.20)`);
+  grd.addColorStop(0.50, `rgba(${r},${g},${b},.045)`);
+  grd.addColorStop(1.00, `rgba(${r},${g},${b},0)`);
+  g2.fillStyle = grd;
+  g2.fillRect(0, 0, s, s);
+  return c;
+}
+
+/* ============================================================
+   shapes — sample white pixels of anything we draw
+   ============================================================ */
+function trackedWidth(c, text, tracking) {
+  let w = 0;
+  for (const ch of text) w += c.measureText(ch).width;
+  return w + tracking * (text.length - 1);
+}
+function drawTracked(c, text, cx, y, tracking) {
+  let x = cx - trackedWidth(c, text, tracking) / 2;
+  for (const ch of text) {
+    c.fillText(ch, x, y);
+    x += c.measureText(ch).width + tracking;
   }
+}
 
-  function setLang(next) {
-    lang = next;
-    var nodes = document.querySelectorAll('[data-i18n]');
-    for (var i = 0; i < nodes.length; i++) {
-      var s = t(nodes[i].getAttribute('data-i18n'));
-      if (s) nodes[i].textContent = s;
+function sampleShape(draw, startStep, cap) {
+  const cv = document.createElement('canvas');
+  cv.width  = Math.floor(W * DPR);
+  cv.height = Math.floor(H * DPR);
+  const c = cv.getContext('2d', { willReadFrequently: true });
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+  c.fillStyle = '#fff';
+  c.textBaseline = 'middle';
+  const meta = draw(c) || {};
+
+  const iw = cv.width, ih = cv.height;
+  const data = c.getImageData(0, 0, iw, ih).data;
+  const splitPx = (meta.split != null ? meta.split : 1e9) * DPR;
+  const pts = [];
+  for (let step = startStep; step <= startStep + 6; step++) {
+    pts.length = 0;
+    const coarse = Math.max(1, Math.round(step * DPR));
+    const fine   = Math.max(1, Math.round((step - 1) * DPR));
+    for (let y = 0; y < ih;) {
+      const sp = y >= splitPx ? fine : coarse;
+      for (let x = 0; x < iw; x += sp) {
+        if (data[(y * iw + x) * 4 + 3] > 140) {
+          pts.push([x / DPR + rnd(-.8, .8), y / DPR + rnd(-.8, .8)]);
+        }
+      }
+      y += sp;
     }
-    var labelled = document.querySelectorAll('[data-i18n-aria]');
-    for (var j = 0; j < labelled.length; j++) {
-      var a = t(labelled[j].getAttribute('data-i18n-aria'));
-      if (a) labelled[j].setAttribute('aria-label', a);
-    }
-    root.lang = next;
-    btnEn.setAttribute('aria-pressed', String(next === 'en'));
-    btnRu.setAttribute('aria-pressed', String(next === 'ru'));
-    afterLang.forEach(function (fn) { fn(); });
-    try { localStorage.setItem('lang', next); } catch (e) {}
+    if (pts.length <= cap) break;
   }
+  return { pts: pts.slice(), meta };
+}
 
-  btnEn.addEventListener('click', function () { setLang('en'); });
-  btnRu.addEventListener('click', function () { setLang('ru'); });
+/* the logo lockup: LEGION over a tracked-out CODES of identical width */
+function drawLogo(c) {
+  const target = Math.min(W * 0.78, 860);
+  let size = 200;
+  c.font = FONT.replace('<S>', size);
+  const track1 = () => size * 0.055;
+  size = clamp(size * (target / trackedWidth(c, 'LEGION', track1())), 34, 210);
+  c.font = FONT.replace('<S>', size);
+  const w1 = trackedWidth(c, 'LEGION', track1());
 
-  var saved = null;
-  try { saved = localStorage.getItem('lang'); } catch (e) {}
-  if (saved === 'ru') setLang('ru');
+  const size2 = size * 0.32;
+  c.font = FONT.replace('<S>', size2);
+  let plain = 0;
+  for (const ch of 'CODES') plain += c.measureText(ch).width;
+  const track2 = (w1 - plain) / 4;
 
-  /* ---------------------------------------------------------------- *
-     Hero. The iframe is 208 KB over the wire, so it is only built on a
-     desktop pointer. Everyone else keeps the screenshot and the link
-     that are already in the markup — which is also what a visitor
-     without JS gets.
-   * ---------------------------------------------------------------- */
-  var heroView = document.getElementById('hero-view');
-  var heroState = document.getElementById('hero-state');
-  var playBtn = document.getElementById('play');
-  var openGame = document.getElementById('open-game');
-  var releaseBtn = document.getElementById('release');
-  var fine = window.matchMedia('(hover: hover) and (pointer: fine)');
-  var wide = window.matchMedia('(min-width: 900px)');
-  var frame = null;
+  const cx = W / 2, cy = H / 2;
+  const y1 = cy - size * 0.13;
+  const y2 = cy + size * 0.50;
 
-  /* A framed page laid out at a fixed logical width, then scaled down to
-     whatever cell it has to live in. Scaling does not break pointer input:
-     the browser maps coordinates through the transform, so the hero frame
-     stays playable while the Porsche one is deliberately inert. */
-  var LOGICAL_W = 1280;
+  c.font = FONT.replace('<S>', size);
+  drawTracked(c, 'LEGION', cx, y1, track1());
+  c.font = FONT.replace('<S>', size2);
+  drawTracked(c, 'CODES', cx, y2, track2);
 
-  function fitPreview(box, el) {
-    function fit() {
-      el.style.transform = 'scale(' + (box.getBoundingClientRect().width / LOGICAL_W) + ')';
-    }
-    if (window.ResizeObserver) new ResizeObserver(fit).observe(box);
-    else window.addEventListener('resize', fit);
-    fit();
-  }
+  return {
+    top: y1 - size * 0.42, bottom: y2 + size2 * 0.62,
+    split: (y1 + y2) / 2,                       // small glyphs below → denser
+    left: cx - w1 / 2, right: cx + w1 / 2,
+    cx, cy: (y1 + y2) / 2, size
+  };
+}
 
-  if (fine.matches && wide.matches) {
-    frame = document.createElement('iframe');
-    frame.className = 'preview-frame';
-    frame.title = 'The Ancient Empires';
-    frame.setAttribute('tabindex', '-1');
-    frame.setAttribute('inert', '');
-    frame.setAttribute('loading', 'eager');
-    frame.setAttribute('scrolling', 'no');
-    frame.src = GAME_URL;
-    heroView.insertBefore(frame, heroView.firstChild);
-    heroView.classList.add('has-frame');
-    fitPreview(heroView, frame);
+function drawQuestion(c) {
+  const size = Math.min(H * 0.62, W * 0.72);
+  c.font = FONT.replace('<S>', size);
+  const w = c.measureText('?').width;
+  c.fillText('?', W / 2 - w / 2, H / 2);
+  return { cx: W / 2, cy: H / 2, size, top: H / 2 - size * .38, bottom: H / 2 + size * .38 };
+}
 
-    playBtn.hidden = false;
-    openGame.hidden = true;
-
-    var playing = false;
-    function paintState() {
-      heroState.textContent = playing ? t('ui.playing') : 'The Ancient Empires';
-    }
-    afterLang.push(paintState);
-
-    playBtn.addEventListener('click', function () {
-      playing = true;
-      heroView.classList.add('playing');
-      frame.removeAttribute('inert');
-      releaseBtn.hidden = false;
-      paintState();
-      frame.focus();
-    });
-
-    releaseBtn.addEventListener('click', function () {
-      playing = false;
-      heroView.classList.remove('playing');
-      frame.setAttribute('inert', '');
-      releaseBtn.hidden = true;
-      paintState();
-      playBtn.focus();
-    });
-  }
-
-  /* Mouse chords are useless on a phone — fold the hotkeys away there.
-     720px, the same breakpoint where the CSS reveals <summary>: fold it
-     anywhere the user can't unfold it and the block just vanishes. */
-  if (window.matchMedia('(max-width: 720px)').matches) {
-    var keysWrap = document.querySelector('.keys-wrap');
-    if (keysWrap) keysWrap.removeAttribute('open');
-  }
-
-  /* Porsche preview: nothing loads until it is asked for. */
-  var porscheView = document.getElementById('porsche-view');
-  var porscheLoad = document.getElementById('porsche-load');
-  porscheLoad.addEventListener('click', function () {
-    var f = document.createElement('iframe');
-    f.className = 'preview-frame is-static';
-    f.title = 'Porsche 911 Turbo S landing page';
-    f.src = PORSCHE_URL;
-    f.setAttribute('loading', 'lazy');
-    f.setAttribute('scrolling', 'no');
-    porscheView.insertBefore(f, porscheView.firstChild);
-
-    /* the frame itself takes no input — the click target is this overlay */
-    var over = document.createElement('a');
-    over.className = 'preview-overlay';
-    over.href = PORSCHE_URL;
-    over.target = '_blank';
-    over.rel = 'noopener';
-    over.setAttribute('data-i18n-aria', 'ui.openlive_aria');
-    over.setAttribute('aria-label', t('ui.openlive_aria'));
-    var tag = document.createElement('span');
-    tag.className = 'preview-tag';
-    tag.setAttribute('data-i18n', 'ui.open');
-    tag.textContent = t('ui.open');
-    over.appendChild(tag);
-    porscheView.appendChild(over);
-
-    porscheLoad.hidden = true;
-    fitPreview(porscheView, f);
+/* neighbour pairs → constellation lines over the final logo */
+function buildLinks() {
+  links = [];
+  const cell = 16, grid = new Map();
+  parts.forEach((p, i) => {
+    const k = ((p.tx / cell) | 0) + ':' + ((p.ty / cell) | 0);
+    (grid.get(k) || grid.set(k, []).get(k)).push(i);
   });
-
-  /* ---------------------------------------------------------------- *
-     Box select. Same primitive as the RTS above: press on empty space,
-     drag, anything the rectangle touches is selected.
-   * ---------------------------------------------------------------- */
-  var reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-  if (!fine.matches || reduce.matches) return;
-
-  var units = [].slice.call(document.querySelectorAll('.unit'));
-  var marquee = document.getElementById('marquee');
-  var hud = document.getElementById('hud');
-  var hudText = document.getElementById('hud-text');
-  var hudMark = document.getElementById('hud-mark');
-
-  hud.hidden = false;
-  document.body.classList.add('has-hud');
-
-  /* A keyboard route to the same state, without nesting a button
-     inside a panel that already contains links. */
-  units.forEach(function (unit) {
-    var btn = document.createElement('button');
-    btn.type = 'button';
-    btn.className = 'tag-btn select-toggle';
-    btn.setAttribute('data-i18n', 'ui.select');
-    btn.textContent = t('ui.select');
-    btn.setAttribute('aria-pressed', 'false');
-    btn.addEventListener('click', function () {
-      setSelected(unit, unit.dataset.selected !== 'true');
-      render();
-    });
-    unit.querySelector('.panel-head').appendChild(btn);
-  });
-
-  function setSelected(unit, on) {
-    if (on) unit.dataset.selected = 'true';
-    else delete unit.dataset.selected;
-    unit.querySelector('.select-toggle').setAttribute('aria-pressed', String(!!on));
-  }
-
-  function clearAll() {
-    units.forEach(function (u) { setSelected(u, false); });
-  }
-
-  function render() {
-    var sel = units.filter(function (u) { return u.dataset.selected === 'true'; });
-    if (!sel.length) {
-      hudMark.classList.remove('on');
-      hudText.textContent = t('hud.idle');
-      return;
+  const seen = new Set();
+  for (let i = 0; i < parts.length; i += 4) {
+    const a = parts[i];
+    const gx = (a.tx / cell) | 0, gy = (a.ty / cell) | 0;
+    let best = -1, bd = 1e9;
+    for (let ox = -1; ox <= 1; ox++) for (let oy = -1; oy <= 1; oy++) {
+      const arr = grid.get((gx + ox) + ':' + (gy + oy));
+      if (!arr) continue;
+      for (const j of arr) {
+        if (j === i) continue;
+        const b = parts[j];
+        const d = (a.tx - b.tx) ** 2 + (a.ty - b.ty) ** 2;
+        if (d < bd && d > 9) { bd = d; best = j; }
+      }
     }
-    hudMark.classList.add('on');
-
-    var loc = 0, kb = 0, hasKb = false, stack = [];
-    sel.forEach(function (u) {
-      loc += parseInt(u.dataset.loc, 10) || 0;
-      if (u.dataset.kb) { kb += parseInt(u.dataset.kb, 10); hasKb = true; }
-      if (stack.indexOf(u.dataset.stack) === -1) stack.push(u.dataset.stack);
-    });
-
-    var parts = [sel.length + ' ' + t('hud.selected'), 'LOC ' + loc.toLocaleString('en-US')];
-    if (hasKb) parts.push(t('hud.size') + ' ' + kb + ' KB');
-    parts.push(t('hud.stack') + ' ' + stack.join(' · '));
-    hudText.textContent = parts.join('   ');
+    if (best >= 0 && bd < 900) {
+      const key = i < best ? i + '-' + best : best + '-' + i;
+      if (!seen.has(key)) { seen.add(key); links.push([i, best]); }
+    }
+    if (links.length > 1400) break;
   }
-  afterLang.push(render);
+}
 
-  function pageBox(el) {
-    var r = el.getBoundingClientRect();
-    return {
-      l: r.left + window.scrollX, t: r.top + window.scrollY,
-      r: r.right + window.scrollX, b: r.bottom + window.scrollY
+/* ============================================================
+   scene build
+   ============================================================ */
+function buildStars() {
+  stars = [];
+  const n = Math.min(QUAL.starMax, Math.round((W * H) / QUAL.starDiv));
+  for (let i = 0; i < n; i++) {
+    const d = Math.random();
+    stars.push({
+      x: rnd(0, W), y: rnd(0, H),
+      r: rnd(.35, 1.5) * (.5 + d),
+      d: .15 + d * 1.1,
+      a: rnd(.18, .85),
+      tw: rnd(.6, 2.4), ph: rnd(0, 7),
+      hue: Math.random() < .16 ? (Math.random() < .5 ? '190,225,255' : '255,225,195') : '235,242,255'
+    });
+  }
+}
+
+/* matter orbiting inside the accretion disk */
+function buildDisk() {
+  disk = [];
+  for (let i = 0; i < 220; i++) {
+    const r = holeR * rnd(1.35, 3.5);
+    disk.push({
+      r, th: rnd(0, 6.283),
+      w: 2.4 / Math.pow(r / holeR, 1.5),        // keplerian
+      s: rnd(.5, 1.7),
+      hot: clamp(1 - (r / holeR - 1.35) / 2.2, 0, 1),
+      ph: rnd(0, 7)
+    });
+  }
+}
+
+function buildParticles(startLive) {
+  const logo = sampleShape(drawLogo, 3, QUAL.cap);
+  const q    = sampleShape(drawQuestion, 3, QUAL.cap);
+  logoBox = logo.meta; qBox = q.meta;
+
+  const cx = W / 2, cy = H / 2;
+  parts = [];
+
+  logo.pts.forEach(([tx, ty], i) => {
+    const qp = q.pts[i % q.pts.length];
+    const ang = Math.random() * Math.PI * 2;
+    const rad = Math.max(W, H) * rnd(.7, 1.8);
+    const ci = (Math.random() * PALETTE.length) | 0;
+
+    const p = {
+      tx, ty,                                   // logo home
+      qx: qp[0] + rnd(-2, 2), qy: qp[1] + rnd(-2, 2),
+      hx: tx, hy: ty,                           // active home
+      x: cx + Math.cos(ang) * rad,
+      y: cy + Math.sin(ang) * rad * .8,
+      ox: 0, oy: 0, vx: 0, vy: 0,
+      mode: ST.WAIT,
+      delay: Math.random() * 1300 * SP,         // infall stagger
+
+      // orbital parameters around the hole
+      r: rad, th: ang, dir: Math.random() < .5 ? -1 : 1,
+      rT: holeR * rnd(1.5, 5.2),
+      ecc: rnd(.75, 1.3), tilt: rnd(.22, 1),
+      rot: rnd(0, Math.PI), rw: rnd(.4, 1.4),
+
+      // morphing
+      fx0: 0, fy0: 0, mx: 0, my: 0, mt: 0, mdur: 1, mdelay: 0, bow: rnd(-46, 46),
+
+      size: rnd(.75, 1.95) * (ty > logo.meta.split ? 1.18 : 1),
+      flare: Math.random() < .02,
+      spr: sprites[ci], col: PALETTE[ci],
+      tw: rnd(1.1, 3.2), ph: rnd(0, 7),
+      amp: rnd(.8, 2.6), fq: rnd(.35, .95),
+      drift: rnd(.7, 1.5)
     };
-  }
-
-  var start = null, dragging = false, additive = false, base = [];
-
-  document.addEventListener('pointerdown', function (e) {
-    if (e.button !== 0 || e.pointerType !== 'mouse') return;
-    /* below this width the HUD is gone, so selection would be invisible */
-    if (window.innerWidth <= 720) return;
-    /* prose stays draggable as text — the marquee starts on empty ground */
-    if (e.target.closest('a, button, summary, input, select, textarea, iframe, .hero, #hud, p, h3, dt, dd, .stats')) return;
-
-    start = { x: e.pageX, y: e.pageY };
-    dragging = false;
-    additive = e.shiftKey;
-    base = additive ? units.filter(function (u) { return u.dataset.selected === 'true'; }) : [];
+    p.ox = p.x; p.oy = p.y;
+    if (startLive) { p.x = p.ox = tx; p.y = p.oy = ty; p.mode = ST.LIVE; }
+    parts.push(p);
   });
 
-  document.addEventListener('pointermove', function (e) {
-    if (!start) return;
+  buildLinks();
+}
 
-    var x = e.pageX, y = e.pageY;
-    if (!dragging) {
-      if (Math.abs(x - start.x) < 4 && Math.abs(y - start.y) < 4) return;
-      dragging = true;
-      marquee.style.display = 'block';
-      document.body.classList.add('dragging');
+/* ============================================================
+   resize
+   ============================================================ */
+function resize() {
+  DPR = QUAL.dpr;
+  W = innerWidth; H = innerHeight;
+  for (const cv of [bg, fx]) {
+    cv.width = Math.floor(W * DPR);
+    cv.height = Math.floor(H * DPR);
+  }
+  bgx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  if (!mouse.on) { mouse.x = mouse.tx = W / 2; mouse.y = mouse.ty = H / 2; }
+  holeR = clamp(Math.min(W, H) * .075, 26, 88);
+  buildStars();
+  buildDisk();
+  const wasLive = stage === ST.LIVE;
+  buildParticles(wasLive);
+  if (wasLive) homeBox = logoBox;
+}
+
+/* ============================================================
+   the black hole
+   ============================================================ */
+function holePower() {                       // 0 → gone, 1 → normal, >1 → flaring
+  if (now < 1400 * SP) return easeOutCubic(clamp(now / (1400 * SP), 0, 1));
+  if (now < TL.toQ) return 1;
+  if (now < TL.holdQ) return lerp(1, .22, clamp((now - TL.toQ) / (TL.holdQ - TL.toQ), 0, 1));
+  if (now < TL.implode) return .22;
+  if (now < TL.blast) return lerp(.22, 2.6, easeInQuad(clamp((now - TL.implode) / (TL.blast - TL.implode), 0, 1)));
+  return Math.max(0, 1 - (now - TL.blast) / (260 * SP)) * 2.6;   // destroyed
+}
+
+function drawHole(dt, tSec, k) {
+  const cx = W / 2, cy = H / 2;
+  const R  = holeR * (0.55 + 0.45 * Math.min(k, 1.35));
+  holeSpin += dt / 1000 * (0.5 + k * 1.4);
+
+  bgx.save();
+  bgx.globalCompositeOperation = 'lighter';
+
+  /* --- accretion disk: stacked ellipses, hot inside, amber outside --- */
+  bgx.translate(cx, cy);
+  bgx.rotate(Math.sin(tSec * .07) * .04);
+  bgx.scale(1, 0.26);
+  for (let i = 0; i < 22; i++) {
+    const f = i / 21;
+    const rr = R * (1.35 + f * 2.15);
+    const hot = 1 - f;
+    const col = [
+      Math.round(lerp(255, 255, hot)),
+      Math.round(lerp(150, 238, hot)),
+      Math.round(lerp(70, 255, hot))
+    ];
+    const a = (0.05 + 0.16 * Math.pow(hot, 1.6)) * k * (0.75 + 0.25 * Math.sin(tSec * 2 + i));
+    // doppler beaming — the side rushing toward us is brighter
+    const g = bgx.createLinearGradient(-rr, 0, rr, 0);
+    g.addColorStop(0,   `rgba(${col},${a * 1.55})`);
+    g.addColorStop(.45, `rgba(${col},${a * .75})`);
+    g.addColorStop(1,   `rgba(${col},${a * .30})`);
+    bgx.strokeStyle = g;
+    bgx.lineWidth = R * .16;
+    bgx.beginPath();
+    bgx.arc(0, 0, rr, 0, 6.283);
+    bgx.stroke();
+  }
+  bgx.restore();
+
+  /* --- matter orbiting in the disk (far half first) --- */
+  const drawDisk = far => {
+    bgx.save();
+    bgx.globalCompositeOperation = 'lighter';
+    for (const d of disk) {
+      const th = d.th + holeSpin * d.w;
+      const sn = Math.sin(th);
+      if ((sn < 0) !== far) continue;
+      const x = cx + Math.cos(th) * d.r;
+      const y = cy + sn * d.r * 0.26;
+      const beam = 0.55 + 0.75 * (1 - (Math.cos(th) + 1) / 2);
+      const a = clamp(k * beam * (0.35 + 0.3 * Math.sin(tSec * 3 + d.ph)), 0, 1);
+      const rr = d.s * (2.4 + d.hot * 2.2);
+      bgx.globalAlpha = a;
+      bgx.drawImage(sprites[d.hot > .5 ? 0 : 6], x - rr, y - rr, rr * 2, rr * 2);
+    }
+    bgx.restore();
+  };
+  drawDisk(true);
+
+  /* --- event horizon: an actual hole punched into the frame --- */
+  bgx.globalCompositeOperation = 'source-over';
+  bgx.globalAlpha = 1;
+  bgx.fillStyle = '#000';
+  bgx.beginPath();
+  bgx.arc(cx, cy, R, 0, 6.283);
+  bgx.fill();
+  // gravitational shadow around it
+  const sh = bgx.createRadialGradient(cx, cy, R, cx, cy, R * 2.4);
+  sh.addColorStop(0, 'rgba(0,0,0,.95)');
+  sh.addColorStop(.45, 'rgba(0,0,0,.55)');
+  sh.addColorStop(1, 'rgba(0,0,0,0)');
+  bgx.fillStyle = sh;
+  bgx.beginPath();
+  bgx.arc(cx, cy, R * 2.4, 0, 6.283);
+  bgx.fill();
+
+  /* --- photon ring hugging the horizon --- */
+  bgx.globalCompositeOperation = 'lighter';
+  const pr = bgx.createRadialGradient(cx, cy, R * .96, cx, cy, R * 1.5);
+  pr.addColorStop(0,   `rgba(255,245,225,0)`);
+  pr.addColorStop(.18, `rgba(255,246,230,${.85 * k})`);
+  pr.addColorStop(.32, `rgba(255,190,110,${.30 * k})`);
+  pr.addColorStop(1,   'rgba(255,160,80,0)');
+  bgx.fillStyle = pr;
+  bgx.beginPath();
+  bgx.arc(cx, cy, R * 1.5, 0, 6.283);
+  bgx.fill();
+
+  drawDisk(false);   // near half of the disk passes in front of the sphere
+  bgx.globalAlpha = 1;
+  bgx.globalCompositeOperation = 'source-over';
+}
+
+/* ============================================================
+   background layer
+   ============================================================ */
+function drawBg(dt, tSec, k) {
+  bgx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  bgx.fillStyle = '#000';
+  bgx.fillRect(0, 0, W, H);
+  bgx.globalCompositeOperation = 'lighter';
+
+  const fade = clamp(now / 900, 0, 1);
+  const cx = W / 2, cy = H / 2;
+  const lensR = holeR * 5.5 * Math.min(k, 1.4);
+
+  for (const s of stars) {
+    const tw = .55 + .45 * Math.sin(tSec * s.tw + s.ph);
+    let x = s.x - mouse.px * 30 * s.d;
+    let y = s.y - mouse.py * 24 * s.d;
+    let a = s.a * tw * fade * .9;
+
+    // gravitational lensing: light bends around the hole
+    if (k > .01) {
+      const dx = x - cx, dy = y - cy;
+      const d = Math.hypot(dx, dy);
+      if (d < lensR && d > .01) {
+        const push = (holeR * holeR * 1.5 / Math.max(d, holeR * .6)) * Math.min(k, 1.4);
+        x += dx / d * push;
+        y += dy / d * push;
+        const nd = Math.hypot(x - cx, y - cy);
+        if (nd < holeR * 1.05) { a = 0; }                      // swallowed
+        else if (nd < holeR * 1.6) a *= 1 + (1 - nd / (holeR * 1.6)) * 2.5;  // ring glow
+      }
+    }
+    if (a <= 0) continue;
+    bgx.globalAlpha = a;
+    bgx.fillStyle = `rgb(${s.hue})`;
+    bgx.beginPath();
+    bgx.arc(x, y, s.r, 0, 6.283);
+    bgx.fill();
+  }
+
+  // shooting stars (only once the sky is calm again)
+  if (now > TL.live && Math.random() < dt * .0004) {
+    shooters.push({ x: rnd(-W * .1, W), y: rnd(0, H * .55), vx: rnd(340, 620), vy: rnd(90, 190), life: 1 });
+  }
+  for (let i = shooters.length - 1; i >= 0; i--) {
+    const s = shooters[i];
+    s.x += s.vx * dt / 1000; s.y += s.vy * dt / 1000; s.life -= dt / 1400;
+    if (s.life <= 0 || s.x > W + 200) { shooters.splice(i, 1); continue; }
+    const g = bgx.createLinearGradient(s.x, s.y, s.x - s.vx * .16, s.y - s.vy * .16);
+    g.addColorStop(0, `rgba(235,245,255,${s.life})`);
+    g.addColorStop(1, 'rgba(200,220,255,0)');
+    bgx.strokeStyle = g; bgx.lineWidth = 1.6; bgx.globalAlpha = 1;
+    bgx.beginPath(); bgx.moveTo(s.x, s.y);
+    bgx.lineTo(s.x - s.vx * .16, s.y - s.vy * .16); bgx.stroke();
+  }
+
+  bgx.globalAlpha = 1;
+  bgx.globalCompositeOperation = 'source-over';
+
+  if (k > .005) drawHole(dt, tSec, k);
+}
+
+/* ============================================================
+   stage transitions
+   ============================================================ */
+function startMorph(p, tx, ty, dur, delay, bow) {
+  p.fx0 = p.x; p.fy0 = p.y;
+  p.mx = tx; p.my = ty;
+  p.mt = 0; p.mdur = dur; p.mdelay = delay;
+  p.bow = bow;
+  p.mode = ST.TO_Q;                    // generic "morphing" mode
+}
+
+function enterStage(s) {
+  stage = s;
+  if (s === ST.TO_Q) {
+    for (const p of parts)
+      startMorph(p, p.qx, p.qy, rnd(600, 900) * SP, Math.random() * 420 * SP, rnd(-30, 30));
+  }
+  else if (s === ST.HOLD_Q) {
+    homeBox = qBox;
+    for (const p of parts) { p.hx = p.qx; p.hy = p.qy; p.mode = ST.LIVE; }
+  }
+  else if (s === ST.IMPLODE) {
+    for (const p of parts) p.mode = ST.IMPLODE;
+  }
+  else if (s === ST.BLAST) {
+    detonate();
+    for (const p of parts) {
+      const a = Math.atan2(p.y - H / 2, p.x - W / 2) + rnd(-.35, .35);
+      const v = rnd(9, 26);
+      p.vx = Math.cos(a) * v;
+      p.vy = Math.sin(a) * v * .8;
+      p.mode = ST.BLAST;
+    }
+  }
+  else if (s === ST.TO_LOGO) {
+    for (const p of parts)
+      startMorph(p, p.tx, p.ty,
+                 TL.logoDur * rnd(.88, 1.12), Math.random() * TL.logoStag, rnd(-60, 60));
+  }
+  else if (s === ST.LIVE) {
+    homeBox = logoBox;
+    for (const p of parts) { p.hx = p.tx; p.hy = p.ty; p.mode = ST.LIVE; }
+    setTimeout(() => corners.forEach(el => el.style.opacity = '1'), 400);
+    setTimeout(() => replayEl.classList.add('show'), 1200);
+    setTimeout(() => dispatchEvent(new CustomEvent('legion:live')), 500);
+  }
+}
+
+/* ---------- the detonation ---------- */
+function detonate() {
+  shake = REDUCED ? 0 : 34;
+  const M = Math.max(W, H);
+
+  core = { life: 0, dur: 620 * SP };
+
+  // layered shockwaves — different speeds, shapes and colours
+  // kept inside the frame so every wave reads as a ring, never as a bar
+  rings.push({ life:    0, dur: 1400 * SP, max: M * 1.05, sx: 1.00, sy: 1.00, hue: '255,248,235', a: .55, band: 16, grow: 130 });
+  rings.push({ life:  -80, dur: 1150 * SP, max: W * 0.40, sx: 1.55, sy: .60, hue: '190,225,255', a: .48, band: 22, grow: 120 });
+  rings.push({ life: -200, dur: 1900 * SP, max: M * 0.52, sx: 1.15, sy: 1.05, hue: '130,190,255', a: .26, band: 34, grow: 170 });
+  rings.push({ life: -340, dur: 2000 * SP, max: W * 0.34, sx: 1.85, sy: .48, hue: '255,205,140', a: .30, band: 26, grow: 130 });
+  rings.push({ life: -520, dur: 1500 * SP, max: H * 0.38, sx: .62, sy: 1.55, hue: '190,170,255', a: .20, band: 24, grow: 110 });
+
+  // hard light rays punching out of the core
+  for (let i = 0; i < 34; i++) {
+    const a = Math.random() * 6.283;
+    rays.push({
+      a, life: 0, dur: rnd(420, 900) * SP,
+      len: M * rnd(.25, .85) * (1 - Math.abs(Math.sin(a)) * .45),
+      w: rnd(1, 4.5),
+      hue: Math.random() < .25 ? '255,215,160' : '215,238,255'
+    });
+  }
+
+  // burning debris
+  if (!REDUCED) {
+    for (let i = 0; i < 320; i++) {
+      const a = Math.random() * 6.283;
+      const sp = rnd(90, 900) * (1 - Math.abs(Math.sin(a)) * .45);
+      const ci = (Math.random() * PALETTE.length) | 0;
+      sparks.push({
+        x: W / 2 + rnd(-14, 14), y: H / 2 + rnd(-14, 14), px: 0, py: 0,
+        vx: Math.cos(a) * sp, vy: Math.sin(a) * sp * .55,
+        life: 1, decay: rnd(.45, 1.2), r: rnd(.9, 3.4), spr: sprites[ci]
+      });
+    }
+  }
+
+  if (!REDUCED) {
+    flashEl.style.transition = 'none';
+    flashEl.style.opacity = '0';
+    requestAnimationFrame(() => {
+      flashEl.style.transition = 'opacity .09s linear';
+      flashEl.style.opacity = '.95';
+      setTimeout(() => {
+        flashEl.style.transition = 'opacity 1.5s cubic-bezier(.2,.6,.25,1)';
+        flashEl.style.opacity = '0';
+      }, 110);
+    });
+  }
+}
+
+/* ============================================================
+   main loop
+   ============================================================ */
+function frame(ts) {
+  /* nothing to draw while the hero is off-screen or the tab is hidden */
+  if (PAUSED) { last = ts; requestAnimationFrame(frame); return; }
+
+  const dt = Math.min(50, ts - last);
+  last = ts;
+
+  /* one-shot downgrade, and only in the first second — the particles
+     are still off-screen then, so a rebuild is invisible */
+  if (!QUAL.settled) {
+    if (++qN > 18) qSum += dt;
+    if (qN >= 70) {
+      QUAL.settled = true;
+      if (qSum / (qN - 18) > 26 && QUAL.dpr > 1 && now < 1300) {
+        QUAL.dpr = 1;
+        QUAL.starMax = Math.round(QUAL.starMax * 0.6);
+        QUAL.cap = Math.round(QUAL.cap * 0.6);
+        resize();
+      }
+    }
+  }
+  now = ts - t0;
+  const tSec = now / 1000;
+  const cx = W / 2, cy = H / 2;
+
+  mouse.x += (mouse.tx - mouse.x) * .12;
+  mouse.y += (mouse.ty - mouse.y) * .12;
+  mouse.px = clamp((mouse.x - W / 2) / W || 0, -.5, .5);
+  mouse.py = clamp((mouse.y - H / 2) / H || 0, -.5, .5);
+
+  /* ---- stage machine ---- */
+  if (stage === ST.WAIT    && now >= TL.infall)  stage = ST.INFALL;
+  if (stage === ST.INFALL  && now >= TL.toQ)     enterStage(ST.TO_Q);
+  if (stage === ST.TO_Q    && now >= TL.holdQ)   enterStage(ST.HOLD_Q);
+  if (stage === ST.HOLD_Q  && now >= TL.implode) enterStage(ST.IMPLODE);
+  if (stage === ST.IMPLODE && now >= TL.blast)   enterStage(ST.BLAST);
+  if (stage === ST.BLAST   && now >= TL.toLogo)  enterStage(ST.TO_LOGO);
+  if (stage === ST.TO_LOGO && now >= TL.live)    enterStage(ST.LIVE);
+
+  const k = holePower();
+  drawBg(dt, tSec, k);
+
+  /* ---- trails ---- */
+  let fadeA = .20;
+  if (stage <= ST.INFALL) fadeA = .13;
+  else if (stage === ST.IMPLODE) fadeA = .16;
+  else if (stage === ST.BLAST || stage === ST.TO_LOGO) fadeA = .22;
+  else if (stage === ST.LIVE) fadeA = .36;
+  else fadeA = .30;
+
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.fillStyle = `rgba(0,0,0,${fadeA})`;
+  ctx.fillRect(0, 0, W, H);
+  ctx.globalCompositeOperation = 'lighter';
+
+  ctx.save();
+  if (shake > .2) {
+    shake *= Math.pow(.93, dt / 16);
+    ctx.translate(rnd(-shake, shake), rnd(-shake, shake));
+  }
+
+  const isLive = stage === ST.LIVE;
+  const onLogo = isLive;
+
+  /* ---- the lockup breathes, sways and follows the pointer ---- */
+  const swayX = Math.sin(tSec * .33) * 4.5;
+  const swayY = Math.cos(tSec * .26) * 3.0;
+  const parX  = -mouse.px * 14;
+  const parY  = -mouse.py * 10;
+  const breathe = 1 + Math.sin(tSec * .55) * .006;
+
+  /* ---- glitch bands ---- */
+  if (onLogo && now > nextGlitch && now > glitchUntil) {
+    glitchUntil = now + rnd(90, 190);
+    nextGlitch = now + rnd(4500, 9000);
+    bands = [];
+    for (let i = 0; i < 3; i++)
+      bands.push({ y: rnd(logoBox.top, logoBox.bottom), h: rnd(6, 26), dx: rnd(-16, 16) });
+  }
+  const glitching = now < glitchUntil;
+
+  /* ---- constellation links ---- */
+  if (onLogo) {
+    const base = clamp((now - TL.live) / 1200, 0, 1);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (const [i, j] of links) {
+      const a = parts[i], b = parts[j];
+      ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+    }
+    ctx.strokeStyle = `rgba(150,190,240,${.055 * base})`;
+    ctx.stroke();
+  }
+
+  const waveX = ((tSec * 175) % (W + 900)) - 450;
+
+  /* ============ particles ============ */
+  for (const p of parts) {
+    switch (p.mode) {
+
+      case ST.WAIT: {
+        if (stage >= ST.INFALL && now - TL.infall >= p.delay) p.mode = ST.INFALL;
+        else { p.x += Math.sin(tSec * .5 + p.ph) * .3; p.y += Math.cos(tSec * .4 + p.ph) * .3; }
+        break;
+      }
+
+      /* spiral infall — keplerian, so it whips around as it gets close */
+      case ST.INFALL: {
+        p.r += (p.rT - p.r) * (1 - Math.exp(-dt / 700));
+        p.th += p.dir * (2.0 / Math.pow(Math.max(p.r, 20), 1.5)) * dt;
+        const wob = Math.sin(p.th * 2 + p.ph) * p.r * .06 * p.rw;
+        const rr = p.r + wob;
+        const ex = Math.cos(p.th) * rr * p.ecc;
+        const ey = Math.sin(p.th) * rr * p.tilt;
+        const cs = Math.cos(p.rot), sn = Math.sin(p.rot);
+        p.x = cx + ex * cs - ey * sn;
+        p.y = cy + ex * sn + ey * cs;
+        break;
+      }
+
+      /* generic morph along a bowed path */
+      case ST.TO_Q: {
+        p.mt += dt;
+        const u = clamp((p.mt - p.mdelay) / p.mdur, 0, 1);
+        if (u > 0) {
+          const e = easeInOutCubic(u);
+          let dx = p.mx - p.fx0, dy = p.my - p.fy0;
+          const L = Math.hypot(dx, dy) || 1;
+          const bow = Math.sin(Math.PI * u) * p.bow;
+          p.x = lerp(p.fx0, p.mx, e) + (-dy / L) * bow;
+          p.y = lerp(p.fy0, p.my, e) + ( dx / L) * bow;
+        }
+        break;
+      }
+
+      /* sucked into the hole */
+      case ST.IMPLODE: {
+        const dx = cx - p.x, dy = cy - p.y;
+        const d = Math.hypot(dx, dy) || 1;
+        const pull = 1400 / Math.max(d, 40);
+        p.vx += (dx / d) * pull * dt / 1000;
+        p.vy += (dy / d) * pull * dt / 1000;
+        p.vx += (-dy / d) * 12 * dt / 1000;      // tangential swirl
+        p.vy += ( dx / d) * 12 * dt / 1000;
+        p.x += p.vx; p.y += p.vy;
+        break;
+      }
+
+      /* blown outward */
+      case ST.BLAST: {
+        p.x += p.vx; p.y += p.vy;
+        p.vx *= .94; p.vy *= .94;
+        break;
+      }
+
+      /* settled: flow field + sway + breathing + cursor repulsion */
+      case ST.LIVE: {
+        const hb = homeBox || logoBox;
+        const flowX = Math.sin(p.hy * .022 + tSec * 1.05 * p.fq + p.ph) * p.amp;
+        const flowY = Math.cos(p.hx * .018 + tSec * .85 * p.fq + p.ph) * p.amp * .8;
+        const gx = hb.cx + (p.hx - hb.cx) * breathe + flowX + swayX * p.drift + parX;
+        const gy = hb.cy + (p.hy - hb.cy) * breathe + flowY + swayY * p.drift + parY;
+
+        p.vx += (gx - p.x) * .030;
+        p.vy += (gy - p.y) * .030;
+
+        const ddx = p.x - mouse.x, ddy = p.y - mouse.y;
+        const d2 = ddx * ddx + ddy * ddy;
+        if (mouse.on && d2 < 14400 && d2 > .01) {
+          const d = Math.sqrt(d2);
+          const f = (1 - d / 120) * 2.2;
+          p.vx += (ddx / d) * f;
+          p.vy += (ddy / d) * f;
+        }
+        p.vx *= .905; p.vy *= .905;
+        p.x += p.vx; p.y += p.vy;
+
+        if (Math.random() < 0.00012) {           // a star breaks loose now and then
+          const a = Math.random() * 6.283;
+          p.vx += Math.cos(a) * rnd(2, 5);
+          p.vy += Math.sin(a) * rnd(2, 5);
+        }
+        break;
+      }
     }
 
-    var box = {
-      l: Math.min(start.x, x), t: Math.min(start.y, y),
-      r: Math.max(start.x, x), b: Math.max(start.y, y)
-    };
-    marquee.style.left = box.l + 'px';
-    marquee.style.top = box.t + 'px';
-    marquee.style.width = (box.r - box.l) + 'px';
-    marquee.style.height = (box.b - box.t) + 'px';
+    /* ---- brightness ---- */
+    const spd = Math.hypot(p.x - p.ox, p.y - p.oy);
+    let a;
+    if (p.mode === ST.WAIT) a = .3;
+    else if (p.mode === ST.LIVE) {
+      a = .52 + .38 * Math.sin(tSec * p.tw + p.ph);
+      const dw = Math.abs(p.x - waveX);
+      if (dw < 130) a += (1 - dw / 130) * .8;
+      if (onLogo) a *= clamp((now - TL.live) / 500 + .5, .5, 1);
+    }
+    else a = clamp(.42 + spd * .05, .3, 1.15);
 
-    /* three panels — reading them fresh is cheaper than keeping a cache
-       honest across scroll and resize */
-    units.forEach(function (u) {
-      var p = pageBox(u);
-      var hit = !(p.r < box.l || p.l > box.r || p.b < box.t || p.t > box.b);
-      setSelected(u, hit || base.indexOf(u) !== -1);
-    });
-    render();
-  });
+    // matter close to the horizon is swallowed by it
+    if (k > .01) {
+      const dh = Math.hypot(p.x - cx, p.y - cy);
+      if (dh < holeR * 1.9) a *= clamp((dh - holeR * .75) / (holeR * 1.15), 0, 1);
+    }
 
-  function endDrag() {
-    if (!start) return;
-    if (!dragging) { clearAll(); render(); }
-    start = null;
-    dragging = false;
-    marquee.style.display = 'none';
-    document.body.classList.remove('dragging');
+    let dx = 0;
+    if (glitching) for (const b of bands) if (p.y > b.y && p.y < b.y + b.h) { dx = b.dx; break; }
+
+    const r = p.size * (p.mode === ST.LIVE ? 2.5 : 3.6);
+    ctx.globalAlpha = clamp(a, 0, 1.4);
+    ctx.drawImage(p.spr, p.x + dx - r, p.y - r, r * 2, r * 2);
+
+    if (p.flare && p.mode === ST.LIVE) {
+      const fl = r * (3.4 + Math.sin(tSec * p.tw + p.ph) * .9);
+      ctx.globalAlpha = clamp(a * .28, 0, .5);
+      ctx.strokeStyle = `rgba(${p.col[0]},${p.col[1]},${p.col[2]},1)`;
+      ctx.lineWidth = .8;
+      ctx.beginPath();
+      ctx.moveTo(p.x + dx - fl, p.y); ctx.lineTo(p.x + dx + fl, p.y);
+      ctx.moveTo(p.x + dx, p.y - fl * .7); ctx.lineTo(p.x + dx, p.y + fl * .7);
+      ctx.stroke();
+    }
+
+    // streak while moving fast
+    if (spd > 2.2 && p.mode !== ST.LIVE) {
+      ctx.globalAlpha = clamp(a * .4, 0, 1);
+      const rr = r * .8;
+      ctx.drawImage(p.spr, p.ox - rr, p.oy - rr, rr * 2, rr * 2);
+      ctx.drawImage(p.spr, (p.ox + p.x) / 2 - rr, (p.oy + p.y) / 2 - rr, rr * 2, rr * 2);
+    }
+
+    p.ox = p.x; p.oy = p.y;
   }
 
-  document.addEventListener('pointerup', endDrag);
-  document.addEventListener('pointercancel', endDrag);
+  /* ============ explosion layers ============ */
 
-  document.addEventListener('keydown', function (e) {
-    if (e.key === 'Escape') { clearAll(); render(); }
+  // core fireball
+  if (core) {
+    core.life += dt;
+    const u = core.life / core.dur;
+    if (u >= 1) core = null;
+    else {
+      const R = lerp(holeR * .4, holeR * 5.5, easeOutCubic(u));
+      const a = Math.pow(1 - u, 2.1);
+      const g = ctx.createRadialGradient(cx, cy, 0, cx, cy, R);
+      g.addColorStop(0,   `rgba(255,255,255,${a})`);
+      g.addColorStop(.28, `rgba(220,240,255,${a * .8})`);
+      g.addColorStop(.6,  `rgba(140,190,255,${a * .30})`);
+      g.addColorStop(1,   'rgba(90,140,255,0)');
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = g;
+      ctx.beginPath(); ctx.arc(cx, cy, R, 0, 6.283); ctx.fill();
+    }
+  }
+
+  // light rays
+  for (let i = rays.length - 1; i >= 0; i--) {
+    const r = rays[i];
+    r.life += dt;
+    const u = r.life / r.dur;
+    if (u >= 1) { rays.splice(i, 1); continue; }
+    const len = r.len * easeOutQuint(u);
+    const a = Math.pow(1 - u, 2) * .85;
+    const ex = cx + Math.cos(r.a) * len, ey = cy + Math.sin(r.a) * len;
+    const g = ctx.createLinearGradient(cx, cy, ex, ey);
+    g.addColorStop(0, `rgba(${r.hue},0)`);
+    g.addColorStop(.25, `rgba(${r.hue},${a})`);
+    g.addColorStop(1, `rgba(${r.hue},0)`);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = g;
+    ctx.lineWidth = r.w * (1 - u * .6);
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey); ctx.stroke();
+  }
+
+  // debris
+  for (let i = sparks.length - 1; i >= 0; i--) {
+    const s = sparks[i];
+    s.life -= dt / 1000 * s.decay;
+    if (s.life <= 0) { sparks.splice(i, 1); continue; }
+    s.px = s.x; s.py = s.y;
+    s.x += s.vx * dt / 1000; s.y += s.vy * dt / 1000;
+    s.vx *= .972; s.vy *= .972;
+    const rr = s.r * (.5 + s.life);
+    ctx.globalAlpha = s.life * s.life;
+    ctx.drawImage(s.spr, s.x - rr * 3, s.y - rr * 3, rr * 6, rr * 6);
+    ctx.globalAlpha = s.life * s.life * .45;
+    ctx.drawImage(s.spr, (s.px + s.x) / 2 - rr * 2, (s.py + s.y) / 2 - rr * 2, rr * 4, rr * 4);
+  }
+
+  // shockwaves
+  for (let i = rings.length - 1; i >= 0; i--) {
+    const w = rings[i];
+    w.life += dt;
+    if (w.life <= 0) continue;
+    const t = w.life / w.dur;
+    if (t >= 1) { rings.splice(i, 1); continue; }
+    const rad  = Math.max(6, w.max * easeOutCubic(t));
+    const band = w.band + w.grow * t;
+    const alpha = w.a * Math.pow(1 - t, 2.2);
+
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.scale(w.sx, w.sy);
+    const g = ctx.createRadialGradient(0, 0, Math.max(0, rad - band), 0, 0, rad + band * .8);
+    g.addColorStop(0.00, `rgba(${w.hue},0)`);
+    g.addColorStop(0.55, `rgba(${w.hue},${alpha * .5})`);
+    g.addColorStop(0.74, `rgba(${w.hue},${alpha})`);
+    g.addColorStop(1.00, `rgba(${w.hue},0)`);
+    ctx.globalAlpha = 1;
+    ctx.fillStyle = g;
+    ctx.beginPath(); ctx.arc(0, 0, rad + band, 0, 6.283); ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.restore();
+  ctx.globalAlpha = 1;
+  ctx.globalCompositeOperation = 'source-over';
+
+  requestAnimationFrame(frame);
+}
+
+/* ============================================================
+   replay / events
+   ============================================================ */
+function replay() {
+  t0 = performance.now();
+  now = 0;
+  stage = ST.WAIT;
+  shake = 0; holeSpin = 0; core = null;
+  rings.length = 0; sparks.length = 0; rays.length = 0; shooters.length = 0;
+  nextGlitch = 6000; glitchUntil = 0;
+  homeBox = null;
+  replayEl.classList.remove('show');
+  corners.forEach(el => el.style.opacity = '0');
+  flashEl.style.transition = 'none';
+  flashEl.style.opacity = '0';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  ctx.clearRect(0, 0, W, H);
+  buildDisk();
+  buildParticles(false);
+}
+
+window.LEGION = { pause(v) { PAUSED = !!v; } };
+
+addEventListener('resize', resize, { passive: true });
+addEventListener('pointermove', e => {
+  mouse.tx = e.clientX; mouse.ty = e.clientY; mouse.on = true;
+}, { passive: true });
+addEventListener('pointerleave', () => {
+  mouse.on = false; mouse.tx = W / 2; mouse.ty = H / 2;
+});
+addEventListener('keydown', e => { if (e.key === 'r' || e.key === 'R') replay(); });
+replayEl.addEventListener('click', replay);
+
+/* boot */
+sprites = PALETTE.map(makeSprite);
+resize();
+requestAnimationFrame(ts => { t0 = last = ts; requestAnimationFrame(frame); });
+
+})();
+</script>
+
+<script>
+/* ============================================================
+   the page below the intro. Deliberately separate from the
+   intro engine — it listens for one event and never reaches in.
+   ============================================================ */
+(() => {
+'use strict';
+
+const body  = document.body;
+const bg    = document.getElementById('bg');
+const fx    = document.getElementById('fx');
+const cue   = document.getElementById('cue');
+const mark  = document.getElementById('mark');
+const projs = [...document.querySelectorAll('.proj')];
+const REDUCED = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const IO = 'IntersectionObserver' in window;
+
+let unlocked = false;
+
+function unlock() {
+  if (unlocked) return;
+  unlocked = true;
+  body.classList.add('revealed');
+  cue.classList.add('show');
+  startReveals();
+}
+addEventListener('legion:live', unlock, { once: true });
+setTimeout(unlock, 13000);                 // safety net
+
+/* ---------- scroll: dissolve the logo, park the engine ---------- */
+const shots = [...document.querySelectorAll('.shot')];
+let ticking = false, engineOff = false;
+
+function onScroll() {
+  if (ticking) return;
+  ticking = true;
+  requestAnimationFrame(() => {
+    const y = scrollY, h = innerHeight;
+    const k = Math.min(1, y / (h * 0.5));
+
+    fx.style.opacity = String(1 - k);
+    bg.style.opacity = String(1 - k * 0.5);
+
+    if (y > 40) cue.classList.add('gone');
+    else if (unlocked) cue.classList.remove('gone');
+    mark.classList.toggle('show', y > h * 0.55);
+
+    /* once the hero is fully gone there is nothing to animate —
+       stop burning frames on a canvas nobody can see */
+    const off = y > h * 1.15;
+    if (off !== engineOff) {
+      engineOff = off;
+      if (window.LEGION) LEGION.pause(off);
+    }
+
+    /* a little parallax so the previews don't sit dead still */
+    if (!REDUCED) {
+      for (const s of shots) {
+        const r = s.getBoundingClientRect();
+        if (r.bottom < -80 || r.top > h + 80) continue;
+        const c = (r.top + r.height / 2 - h / 2) / h;
+        const f = s.querySelector('iframe');
+        if (f) f.style.marginTop = (-c * 16).toFixed(1) + 'px';
+      }
+    }
+    ticking = false;
+  });
+}
+addEventListener('scroll', onScroll, { passive: true });
+
+/* nothing at all runs while the tab is in the background */
+addEventListener('visibilitychange', () => {
+  if (window.LEGION) LEGION.pause(document.hidden || engineOff);
+});
+
+/* ---------- reveals ---------- */
+function startReveals() {
+  const items = [...document.querySelectorAll('[data-rv]')];
+  if (REDUCED || !IO) {
+    items.forEach(el => el.classList.add('in'));
+    projs.forEach(p => p.classList.add('seen'));
+    return;
+  }
+  const io = new IntersectionObserver(es => {
+    es.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('in');
+      io.unobserve(e.target);
+    });
+  }, { rootMargin: '0px 0px -8% 0px', threshold: 0.15 });
+  items.forEach(el => io.observe(el));
+
+  const pio = new IntersectionObserver(es => {
+    es.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target.classList.add('seen');
+      pio.unobserve(e.target);
+    });
+  }, { rootMargin: '0px 0px -10% 0px', threshold: 0.08 });
+  projs.forEach(p => pio.observe(p));
+}
+
+/* ---------- frames load only when they come near ---------- */
+const frames = [...document.querySelectorAll('iframe[data-src]')];
+
+if (IO) {
+  const fio = new IntersectionObserver(es => {
+    es.forEach(e => {
+      if (!e.isIntersecting) return;
+      if (!e.target.src) e.target.src = e.target.dataset.src;
+      fio.unobserve(e.target);
+    });
+  }, { rootMargin: '260px' });
+  frames.forEach(f => fio.observe(f));
+} else {
+  frames.forEach(f => { f.src = f.dataset.src; });
+}
+
+/* ---------- scaled previews: render at 1280x800, shrink to fit ---------- */
+function fitShots() {
+  for (const s of shots) {
+    const f = s.querySelector('iframe');
+    if (f) f.style.transform = 'scale(' + (s.clientWidth / 1280) + ')';
+  }
+}
+addEventListener('resize', fitShots, { passive: true });
+addEventListener('load', fitShots);
+fitShots();
+
+/* ---------- the game frame ---------- */
+const stage   = document.getElementById('stage');
+const game    = document.getElementById('game');
+const play    = document.getElementById('play');
+const release = document.getElementById('release');
+const note    = document.getElementById('stage-note');
+
+if (stage && game && play) {
+  play.addEventListener('click', () => {
+    if (!game.src) game.src = game.dataset.src;
+    stage.classList.add('on');
+    game.removeAttribute('inert');
+    game.focus();
+    note.textContent = 'The game has the keyboard \u2014 arrows pan the map, not the page';
   });
 
-  render();
+  release.addEventListener('click', () => {
+    game.setAttribute('inert', '');
+    stage.classList.remove('on');
+    note.textContent = 'Runs on this page \u2014 nothing to install';
+    play.focus();
+  });
+
+  if (IO) {
+    new IntersectionObserver(es => {
+      es.forEach(e => {
+        if (!e.isIntersecting && stage.classList.contains('on')) release.click();
+      });
+    }, { threshold: 0 }).observe(stage);
+  }
+}
+
 })();
 </script>
 </body>
